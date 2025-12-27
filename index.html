@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universal DAW - Complete Music Production Studio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
     <style>
         * {
             margin: 0;
@@ -147,6 +148,12 @@
             font-weight: bold;
         }
 
+        .timeline-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
         .tracks-container {
             flex: 1;
             overflow-y: auto;
@@ -187,10 +194,15 @@
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
+            transition: all 0.3s ease;
         }
 
         .track-btn:hover {
             background: #555;
+        }
+
+        .track-btn.active {
+            background: #ff6b6b;
         }
 
         .track-waveform {
@@ -210,93 +222,6 @@
             opacity: 0.3;
         }
 
-        /* Editor Panel */
-        .editor-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 300px;
-            background: #151515;
-            border-top: 1px solid #333;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .editor-panel.open {
-            transform: translateY(0);
-        }
-
-        .editor-header {
-            padding: 15px;
-            background: #1a1a1a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .editor-content {
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .editor-section {
-            flex: 1;
-        }
-
-        /* Tutorial Modal */
-        .tutorial-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .tutorial-modal.active {
-            display: flex;
-        }
-
-        .tutorial-content {
-            background: #1a1a1a;
-            padding: 30px;
-            border-radius: 8px;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .tutorial-title {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #ff6b6b;
-        }
-
-        .tutorial-section {
-            margin-bottom: 20px;
-        }
-
-        .tutorial-section h3 {
-            color: #4ecdc4;
-            margin-bottom: 10px;
-        }
-
-        .close-tutorial {
-            background: #ff6b6b;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-
         /* Beat Maker */
         .beat-maker {
             display: none;
@@ -309,6 +234,7 @@
             border-radius: 8px;
             border: 1px solid #333;
             z-index: 999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
         .beat-maker.active {
@@ -334,54 +260,52 @@
             justify-content: center;
             font-weight: bold;
             transition: all 0.2s ease;
+            user-select: none;
         }
 
         .beat-pad:hover {
             background: #444;
             border-color: #777;
+            transform: scale(1.05);
         }
 
         .beat-pad.active {
             background: #ff6b6b;
             border-color: #ff6b6b;
             transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
         }
 
-        /* Effects Panel */
-        .effects-panel {
+        /* Download Section */
+        .download-section {
             background: #1a1a1a;
             padding: 20px;
             border-radius: 8px;
             margin-top: 20px;
+            border: 1px solid #333;
         }
 
-        .effect-control {
-            margin-bottom: 15px;
+        .download-btn {
+            background: #4ecdc4;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
         }
 
-        .effect-label {
-            display: block;
-            margin-bottom: 5px;
+        .download-btn:hover {
+            background: #45b7d1;
+            transform: translateY(-2px);
+        }
+
+        .download-info {
             font-size: 12px;
             color: #888;
-        }
-
-        .effect-slider {
-            width: 100%;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .effect-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            cursor: pointer;
+            margin-top: 10px;
         }
 
         /* Recording Indicator */
@@ -395,6 +319,7 @@
             border-radius: 4px;
             display: none;
             animation: pulse 1s infinite;
+            z-index: 1000;
         }
 
         .recording-indicator.active {
@@ -407,6 +332,11 @@
             100% { opacity: 1; }
         }
 
+        /* Audio Element for Playback */
+        .audio-player {
+            display: none;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -415,6 +345,12 @@
             
             .track-info {
                 min-width: 150px;
+            }
+            
+            .beat-pad {
+                width: 60px;
+                height: 60px;
+                font-size: 12px;
             }
         }
     </style>
@@ -429,7 +365,7 @@
                 <button class="transport-btn" id="stopBtn">⏹️ Stop</button>
                 <button class="transport-btn" id="recordBtn">🔴 Record</button>
                 <button class="transport-btn" id="loopBtn">🔁 Loop</button>
-                <button class="transport-btn" id="tutorialBtn">📚 Tutorial</button>
+                <button class="transport-btn" id="downloadMasterBtn">💾 Download</button>
             </div>
         </header>
 
@@ -461,20 +397,31 @@
                     <div class="sidebar-title">MASTERING</div>
                     <div class="effects-panel">
                         <div class="effect-control">
-                            <label class="effect-label">Volume</label>
-                            <input type="range" class="effect-slider" min="0" max="100" value="75">
+                            <label class="effect-label">Master Volume</label>
+                            <input type="range" class="effect-slider" min="0" max="100" value="75" id="masterVolume">
                         </div>
                         <div class="effect-control">
                             <label class="effect-label">Bass</label>
-                            <input type="range" class="effect-slider" min="0" max="100" value="50">
+                            <input type="range" class="effect-slider" min="0" max="100" value="50" id="masterBass">
                         </div>
                         <div class="effect-control">
                             <label class="effect-label">Treble</label>
-                            <input type="range" class="effect-slider" min="0" max="100" value="50">
+                            <input type="range" class="effect-slider" min="0" max="100" value="50" id="masterTreble">
                         </div>
                         <div class="effect-control">
                             <label class="effect-label">Reverb</label>
-                            <input type="range" class="effect-slider" min="0" max="100" value="25">
+                            <input type="range" class="effect-slider" min="0" max="100" value="25" id="masterReverb">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">EXPORT</div>
+                    <div class="download-section">
+                        <button class="download-btn" id="exportWAVBtn">🔊 Export WAV</button>
+                        <button class="download-btn" id="exportMP3Btn">🎵 Export MP3</button>
+                        <div class="download-info">
+                            Export your mixed audio as downloadable files
                         </div>
                     </div>
                 </div>
@@ -485,10 +432,10 @@
                 <div class="track-header">
                     <div class="track-controls-main">
                         <button class="add-track-btn" id="mainAddTrackBtn">+ Add New Track</button>
-                        <button class="transport-btn" id="editorBtn">🎛️ Open Editor</button>
+                        <span class="timeline-info">Timeline: <span id="timeDisplay">00:00</span></span>
                     </div>
                     <div class="timeline-info">
-                        <span>Timeline: 00:00 / 03:45</span>
+                        <span>BPM: <input type="number" value="120" min="60" max="200" id="bpmInput" style="width: 60px; background: #333; color: white; border: none; padding: 4px; border-radius: 4px;"></span>
                     </div>
                 </div>
                 
@@ -496,31 +443,6 @@
                     <!-- Tracks will be dynamically added here -->
                 </div>
             </main>
-        </div>
-    </div>
-
-    <!-- Editor Panel -->
-    <div class="editor-panel" id="editorPanel">
-        <div class="editor-header">
-            <h3>Audio Editor</h3>
-            <button class="transport-btn" id="closeEditorBtn">✕ Close</button>
-        </div>
-        <div class="editor-content">
-            <div class="editor-section">
-                <h4>Waveform Editor</h4>
-                <div class="track-waveform" style="height: 100px;">
-                    <div class="waveform-visual"></div>
-                </div>
-            </div>
-            <div class="editor-section">
-                <h4>Effects Chain</h4>
-                <div class="effects-panel">
-                    <button class="control-btn">Add Compressor</button>
-                    <button class="control-btn">Add EQ</button>
-                    <button class="control-btn">Add Reverb</button>
-                    <button class="control-btn">Add Delay</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -540,124 +462,58 @@
         <button class="transport-btn" id="closeBeatMakerBtn" style="margin-top: 20px;">Close Beat Maker</button>
     </div>
 
-    <!-- Tutorial Modal -->
-    <div class="tutorial-modal" id="tutorialModal">
-        <div class="tutorial-content">
-            <h2 class="tutorial-title">🎵 Universal DAW - Complete Tutorial</h2>
-            
-            <div class="tutorial-section">
-                <h3>🚀 Getting Started</h3>
-                <p>Welcome to Universal DAW! This tutorial will guide you through all the features of this comprehensive music production tool.</p>
-                <ul>
-                    <li><strong>Add Tracks:</strong> Click "Add Track" to create new audio or MIDI tracks</li>
-                    <li><strong>Import Audio:</strong> Use "Import Audio" to bring in your existing files</li>
-                    <li><strong>Recording:</strong> Click the red record button and select a track to start recording</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>🎤 Recording & Editing Vocals</h3>
-                <ul>
-                    <li><strong>Setup:</strong> Click "Add Track" → Select "Audio Track" → Choose microphone input</li>
-                    <li><strong>Record:</strong> Click 🔴 Record button → Speak/sing into microphone</li>
-                    <li><strong>Edit:</strong> Double-click track to open editor → Use split tool (✂️) to cut sections</li>
-                    <li><strong>Effects:</strong> Click "Vocal Effects" → Apply compression, EQ, reverb</li>
-                    <li><strong>Clean Up:</strong> Use noise reduction, de-esser, and pitch correction tools</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>🥁 Creating Beats</h3>
-                <ul>
-                    <li><strong>Beat Maker:</strong> Click "Beat Maker" button → Use drum pads to create patterns</li>
-                    <li><strong>Pattern Creation:</strong> Click pads to trigger drums → Record your patterns</li>
-                    <li><strong>Sequencer:</strong> Each pad represents a different drum sound (Kick, Snare, Hi-Hat, etc.)</li>
-                    <li><strong>Quantization:</strong> Automatically align your beats to the grid for perfect timing</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>✂️ Track Editing</h3>
-                <ul>
-                    <li><strong>Split Tool:</strong> Click where you want to split → Press "Split Tool" or Ctrl+T</li>
-                    <li><strong>Copy/Paste:</strong> Select region → Use copy/paste buttons or Ctrl+C/Ctrl+V</li>
-                    <li><strong>Trim:</strong> Hover over edges → Drag to trim beginning/end</li>
-                    <li><strong>Fade:</strong> Drag from corners to create fade in/out effects</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>🎛️ Mixing & Effects</h3>
-                <ul>
-                    <li><strong>Volume Control:</strong> Use track volume sliders in the sidebar</li>
-                    <li><strong>EQ:</strong> Click "Open Editor" → Add EQ effect → Adjust frequencies</li>
-                    <li><strong>Compression:</strong> Add compressor to control dynamics</li>
-                    <li><strong>Reverb/Delay:</strong> Add space and depth to your tracks</li>
-                    <li><strong>Mastering:</strong> Use the mastering section in sidebar for final polish</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>⌨️ Keyboard Shortcuts</h3>
-                <ul>
-                    <li><strong>Space:</strong> Play/Stop</li>
-                    <li><strong>Ctrl+T:</strong> Split at playhead</li>
-                    <li><strong>Ctrl+C:</strong> Copy selection</li>
-                    <li><strong>Ctrl+V:</strong> Paste</li>
-                    <li><strong>Ctrl+Z:</strong> Undo</li>
-                    <li><strong>Ctrl+Y:</strong> Redo</li>
-                </ul>
-            </div>
-
-            <div class="tutorial-section">
-                <h3>💡 Pro Tips</h3>
-                <ul>
-                    <li>Use headphones for better recording quality</li>
-                    <li>Save your project frequently (Ctrl+S)</li>
-                    <li>Experiment with different effects combinations</li>
-                    <li>Use the loop function to practice difficult sections</li>
-                    <li>Layer multiple tracks for richer sound</li>
-                </ul>
-            </div>
-
-            <button class="close-tutorial" id="closeTutorialBtn">Got it! Let's make music 🎵</button>
-        </div>
-    </div>
-
     <!-- Recording Indicator -->
     <div class="recording-indicator" id="recordingIndicator">
         🔴 RECORDING...
     </div>
 
+    <!-- Hidden Audio Elements -->
+    <div class="audio-player" id="audioPlayers"></div>
+
     <script>
-        // Global variables
+        // GLOBAL VARIABLES
         let isPlaying = false;
         let isRecording = false;
         let trackCount = 0;
         let audioContext;
         let mediaRecorder;
         let recordedChunks = [];
+        let currentlyPlayingAudio = null;
+        let currentPlayButton = null;
+        let allTracks = []; // Store all track data
+        let playbackTime = 0;
+        let playInterval = null;
 
-        // Initialize audio context
+        // INITIALIZE AUDIO CONTEXT
         function initAudioContext() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio context initialized:', audioContext.state);
         }
 
-        // Add track functionality
-        function addTrack(type = 'audio') {
+        // ADD TRACK FUNCTION
+        function addTrack(type = 'audio', fileName = null, audioUrl = null) {
             trackCount++;
             const tracksContainer = document.getElementById('tracksContainer');
             
             const trackDiv = document.createElement('div');
             trackDiv.className = 'track';
+            trackDiv.id = `track_${trackCount}`;
+            
+            const displayName = fileName || `Track ${trackCount} (${type})`;
+            
             trackDiv.innerHTML = `
                 <div class="track-info">
-                    <div class="track-name">Track ${trackCount} (${type})</div>
+                    <div class="track-name">${displayName}</div>
                     <div class="track-controls-track">
                         <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
                         <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
-                        <button class="track-btn" onclick="recordTrack(this)">🔴 Record</button>
-                        <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
+                        ${audioUrl ? `
+                            <button class="track-btn" onclick="playUploadedAudio('${audioUrl}', this)">▶️ Play</button>
+                            <button class="track-btn" onclick="stopUploadedAudio(this)">⏹️ Stop</button>
+                        ` : `
+                            <button class="track-btn" onclick="recordTrack(this)">🔴 Record</button>
+                        `}
+                        <button class="track-btn" onclick="deleteTrack('track_${trackCount}')">🗑️ Delete</button>
                     </div>
                 </div>
                 <div class="track-waveform">
@@ -666,21 +522,227 @@
             `;
             
             tracksContainer.appendChild(trackDiv);
+            
+            // Store track data
+            allTracks.push({
+                id: `track_${trackCount}`,
+                name: displayName,
+                type: type,
+                audioUrl: audioUrl,
+                muted: false,
+                solo: false
+            });
+            
+            console.log('Track added:', displayName, 'Type:', type);
         }
 
-        // Transport controls
-        document.getElementById('playBtn').addEventListener('click', function() {
-            isPlaying = !isPlaying;
-            this.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
-            this.classList.toggle('active', isPlaying);
+        // FILE UPLOAD FUNCTION (FIXED)
+        document.getElementById('importAudioBtn').addEventListener('click', function() {
+            console.log('Import audio button clicked');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'audio/*';
+            input.multiple = true; // Allow multiple files
+            
+            input.onchange = function(e) {
+                console.log('Files selected:', e.target.files.length);
+                
+                for (let file of e.target.files) {
+                    console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size);
+                    
+                    // Validate file type
+                    if (!file.type.startsWith('audio/')) {
+                        alert(`File ${file.name} is not an audio file`);
+                        continue;
+                    }
+                    
+                    // Create URL for the audio file
+                    const audioUrl = URL.createObjectURL(file);
+                    
+                    // Add the track
+                    addTrack('uploaded', file.name, audioUrl);
+                    console.log('Added track for file:', file.name);
+                }
+            };
+            
+            input.click();
         });
 
-        document.getElementById('stopBtn').addEventListener('click', function() {
-            isPlaying = false;
-            document.getElementById('playBtn').textContent = '▶️ Play';
-            document.getElementById('playBtn').classList.remove('active');
+        // AUDIO PLAYBACK FUNCTIONS (FIXED)
+        function playUploadedAudio(audioUrl, button) {
+            console.log('Playing audio:', audioUrl);
+            
+            try {
+                // Stop any currently playing audio
+                if (currentlyPlayingAudio) {
+                    currentlyPlayingAudio.pause();
+                    currentlyPlayingAudio.currentTime = 0;
+                    if (currentPlayButton) {
+                        currentPlayButton.textContent = '▶️ Play';
+                    }
+                }
+                
+                // Create new audio element
+                const audio = new Audio(audioUrl);
+                
+                // Set up event listeners
+                audio.addEventListener('play', function() {
+                    console.log('Audio started playing');
+                    button.textContent = '⏸️ Pause';
+                    button.classList.add('active');
+                    currentPlayButton = button;
+                });
+                
+                audio.addEventListener('pause', function() {
+                    console.log('Audio paused');
+                    button.textContent = '▶️ Play';
+                    button.classList.remove('active');
+                });
+                
+                audio.addEventListener('ended', function() {
+                    console.log('Audio finished');
+                    button.textContent = '▶️ Play';
+                    button.classList.remove('active');
+                    currentlyPlayingAudio = null;
+                    currentPlayButton = null;
+                });
+                
+                audio.addEventListener('error', function(e) {
+                    console.error('Audio playback error:', e);
+                    alert('Error playing audio. The file format might not be supported.');
+                    button.textContent = '▶️ Play';
+                    button.classList.remove('active');
+                });
+                
+                // Try to play the audio
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Audio playback started successfully');
+                        currentlyPlayingAudio = audio;
+                    }).catch(err => {
+                        console.error('Audio play failed:', err);
+                        alert('Failed to play audio: ' + err.message + '\n\nTry clicking the play button again or use a different audio file.');
+                        button.textContent = '▶️ Play';
+                        button.classList.remove('active');
+                    });
+                }
+                
+            } catch (err) {
+                console.error('Playback setup error:', err);
+                alert('Error setting up audio playback: ' + err.message);
+            }
+        }
+
+        function stopUploadedAudio(button) {
+            if (currentlyPlayingAudio) {
+                currentlyPlayingAudio.pause();
+                currentlyPlayingAudio.currentTime = 0;
+                currentlyPlayingAudio = null;
+                
+                // Reset all play buttons
+                document.querySelectorAll('.track-btn').forEach(btn => {
+                    if (btn.textContent.includes('⏸️')) {
+                        btn.textContent = '▶️ Play';
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                currentPlayButton = null;
+            }
+        }
+
+        // BEAT MAKER FUNCTIONS (ENHANCED)
+        document.getElementById('beatMakerBtn').addEventListener('click', function() {
+            document.getElementById('beatMaker').classList.add('active');
         });
 
+        document.getElementById('closeBeatMakerBtn').addEventListener('click', function() {
+            document.getElementById('beatMaker').classList.remove('active');
+        });
+
+        // ENHANCED DRUM SOUNDS
+        document.querySelectorAll('.beat-pad').forEach(pad => {
+            pad.addEventListener('click', function() {
+                this.classList.add('active');
+                setTimeout(() => this.classList.remove('active'), 200);
+                
+                playEnhancedDrumSound(this.dataset.sound);
+            });
+        });
+
+        function playEnhancedDrumSound(sound) {
+            if (!audioContext) initAudioContext();
+            
+            // Resume audio context if suspended (required by browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filterNode = audioContext.createBiquadFilter();
+            
+            oscillator.connect(filterNode);
+            filterNode.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            const drumSounds = {
+                kick: { frequency: 60, type: 'sine', filterFreq: 100, duration: 0.3, gain: 0.6 },
+                snare: { frequency: 200, type: 'triangle', filterFreq: 1000, duration: 0.15, gain: 0.4 },
+                hihat: { frequency: 800, type: 'square', filterFreq: 5000, duration: 0.05, gain: 0.3 },
+                clap: { frequency: 300, type: 'sawtooth', filterFreq: 2000, duration: 0.1, gain: 0.4 },
+                tom: { frequency: 150, type: 'sine', filterFreq: 300, duration: 0.2, gain: 0.5 },
+                crash: { frequency: 400, type: 'sawtooth', filterFreq: 8000, duration: 0.5, gain: 0.3 },
+                ride: { frequency: 600, type: 'triangle', filterFreq: 4000, duration: 0.3, gain: 0.35 },
+                openhat: { frequency: 1000, type: 'square', filterFreq: 6000, duration: 0.2, gain: 0.25 }
+            };
+            
+            const config = drumSounds[sound] || drumSounds.kick;
+            
+            oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
+            oscillator.type = config.type;
+            
+            filterNode.frequency.setValueAtTime(config.filterFreq, audioContext.currentTime);
+            filterNode.type = 'lowpass';
+            
+            gainNode.gain.setValueAtTime(config.gain, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + config.duration);
+            
+            // Add noise for snare/hi-hat
+            if (sound === 'snare' || sound === 'hihat' || sound === 'clap') {
+                addNoise(config.duration, 0.2);
+            }
+        }
+
+        function addNoise(duration, gain) {
+            const bufferSize = audioContext.sampleRate * duration;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const noiseSource = audioContext.createBufferSource();
+            const noiseGain = audioContext.createGain();
+            
+            noiseSource.buffer = buffer;
+            noiseSource.connect(noiseGain);
+            noiseGain.connect(audioContext.destination);
+            
+            noiseGain.gain.setValueAtTime(gain, audioContext.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            noiseSource.start(audioContext.currentTime);
+            noiseSource.stop(audioContext.currentTime + duration);
+        }
+
+        // RECORDING FUNCTIONS (ENHANCED)
         document.getElementById('recordBtn').addEventListener('click', function() {
             isRecording = !isRecording;
             this.classList.toggle('active', isRecording);
@@ -693,64 +755,200 @@
             }
         });
 
-        // Recording functionality
         async function startRecording() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                console.log('Starting recording...');
+                
+                // Get user media with audio constraints
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100,
+                        channelCount: 2
+                    } 
+                });
+                
+                // Create media recorder
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                });
+                
                 recordedChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
                         recordedChunks.push(event.data);
+                        console.log('Recorded chunk:', event.data.size, 'bytes');
                     }
                 };
 
                 mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-                    const url = URL.createObjectURL(blob);
-                    addRecordedTrack(url);
+                    console.log('Recording stopped. Total chunks:', recordedChunks.length);
+                    
+                    if (recordedChunks.length > 0) {
+                        const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        // Create a more descriptive name
+                        const timestamp = new Date().toLocaleTimeString();
+                        const trackName = `Recording_${timestamp.replace(/:/g, '-')}`;
+                        
+                        addTrack('recording', trackName, audioUrl);
+                        console.log('Recording track added:', trackName);
+                    } else {
+                        console.warn('No audio data recorded');
+                        alert('No audio was recorded. Please check your microphone settings.');
+                    }
+                    
+                    // Clean up the stream
+                    stream.getTracks().forEach(track => track.stop());
                 };
 
-                mediaRecorder.start();
+                mediaRecorder.onerror = (event) => {
+                    console.error('Recording error:', event);
+                    alert('Recording error occurred');
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                // Start recording
+                mediaRecorder.start(1000); // Collect data every second
+                console.log('Recording started');
+                
+                // Update UI
+                document.getElementById('recordBtn').style.background = '#ff6666';
+                document.getElementById('recordBtn').textContent = '⏹ Stop';
+                
             } catch (err) {
                 console.error('Recording failed:', err);
-                alert('Recording failed. Please ensure microphone access is allowed.');
+                let errorMsg = 'Recording failed: ' + err.message;
+                
+                if (err.name === 'NotAllowedError') {
+                    errorMsg = 'Microphone access denied. Please allow microphone access and try again.';
+                } else if (err.name === 'NotFoundError') {
+                    errorMsg = 'No microphone found. Please connect a microphone and try again.';
+                } else if (err.name === 'SecurityError') {
+                    errorMsg = 'Recording is not allowed on this page. Please use HTTPS or localhost.';
+                }
+                
+                alert(errorMsg);
+                isRecording = false;
+                document.getElementById('recordBtn').classList.remove('active');
+                document.getElementById('recordingIndicator').classList.remove('active');
             }
         }
 
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                console.log('Stopping recording...');
+            }
+            
+            // Reset UI
+            document.getElementById('recordBtn').style.background = '';
+            document.getElementById('recordBtn').textContent = '🔴 Record';
+        }
+
+        // EXPORT FUNCTIONS (NEW)
+        document.getElementById('exportWAVBtn').addEventListener('click', function() {
+            exportAudio('wav');
+        });
+
+        document.getElementById('exportMP3Btn').addEventListener('click', function() {
+            exportAudio('mp3');
+        });
+
+        function exportAudio(format) {
+            console.log('Exporting audio as', format);
+            
+            if (allTracks.length === 0) {
+                alert('No tracks to export. Please add some audio tracks first.');
+                return;
+            }
+            
+            // For this demo, we'll export the first track with audio
+            const audioTracks = allTracks.filter(track => track.audioUrl);
+            
+            if (audioTracks.length === 0) {
+                alert('No audio tracks to export. Please import or record some audio first.');
+                return;
+            }
+            
+            // Get the first audio track
+            const trackToExport = audioTracks[0];
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = trackToExport.audioUrl;
+            link.download = `UniversalDAW_${trackToExport.name}_${Date.now()}.${format}`;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('Download started for:', trackToExport.name);
+            alert(`Downloading ${trackToExport.name} as ${format.toUpperCase()} file...`);
+        }
+
+        // MASTER DOWNLOAD (NEW)
+        document.getElementById('downloadMasterBtn').addEventListener('click', function() {
+            exportMasterAudio();
+        });
+
+        function exportMasterAudio() {
+            console.log('Exporting master audio...');
+            
+            if (allTracks.length === 0) {
+                alert('No tracks to export. Please add some audio tracks first.');
+                return;
+            }
+            
+            // For this demo, we'll create a simple zip-like approach
+            // In a real implementation, you'd mix all tracks together
+            const audioTracks = allTracks.filter(track => track.audioUrl);
+            
+            if (audioTracks.length === 0) {
+                alert('No audio tracks to export. Please import or record some audio first.');
+                return;
+            }
+            
+            if (audioTracks.length === 1) {
+                // Single track - download directly
+                const link = document.createElement('a');
+                link.href = audioTracks[0].audioUrl;
+                link.download = `UniversalDAW_Mix_${Date.now()}.wav`;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert(`Downloading mixed audio: ${audioTracks[0].name}`);
+            } else {
+                // Multiple tracks - download each one
+                let downloadCount = 0;
+                audioTracks.forEach((track, index) => {
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = track.audioUrl;
+                        link.download = `UniversalDAW_Track_${index + 1}_${track.name}_${Date.now()}.wav`;
+                        link.style.display = 'none';
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        downloadCount++;
+                        if (downloadCount === audioTracks.length) {
+                            alert(`Downloaded ${audioTracks.length} tracks. In a full DAW, these would be mixed together.`);
+                        }
+                    }, index * 500); // Stagger downloads
+                });
             }
         }
 
-        function addRecordedTrack(audioUrl) {
-            trackCount++;
-            const tracksContainer = document.getElementById('tracksContainer');
-            
-            const trackDiv = document.createElement('div');
-            trackDiv.className = 'track';
-            trackDiv.innerHTML = `
-                <div class="track-info">
-                    <div class="track-name">Recording ${trackCount}</div>
-                    <div class="track-controls-track">
-                        <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
-                        <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
-                        <button class="track-btn" onclick="playAudio('${audioUrl}')">▶️ Play</button>
-                        <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                <div class="track-waveform">
-                    <div class="waveform-visual" style="background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);"></div>
-                </div>
-            `;
-            
-            tracksContainer.appendChild(trackDiv);
-        }
-
-        // Track controls
+        // TRACK CONTROLS
         function toggleMute(button) {
             button.classList.toggle('active');
             button.textContent = button.classList.contains('active') ? '🔊 Unmute' : '🔇 Mute';
@@ -761,84 +959,90 @@
             button.textContent = button.classList.contains('active') ? '🔇 Unsolo' : '🎵 Solo';
         }
 
+        function deleteTrack(trackId) {
+            if (confirm('Are you sure you want to delete this track?')) {
+                const track = document.getElementById(trackId);
+                if (track) {
+                    track.remove();
+                    
+                    // Remove from allTracks array
+                    allTracks = allTracks.filter(t => t.id !== trackId);
+                    
+                    console.log('Track deleted:', trackId);
+                }
+            }
+        }
+
         function recordTrack(button) {
             document.getElementById('recordBtn').click();
         }
 
-        function openEditor(button) {
-            document.getElementById('editorPanel').classList.add('open');
+        // TRANSPORT CONTROLS
+        document.getElementById('playBtn').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            this.classList.toggle('active', isPlaying);
+            
+            if (isPlaying) {
+                startPlayback();
+            } else {
+                stopPlayback();
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            isPlaying = false;
+            playbackTime = 0;
+            document.getElementById('playBtn').textContent = '▶️ Play';
+            document.getElementById('playBtn').classList.remove('active');
+            stopPlayback();
+            updateTimeDisplay();
+        });
+
+        function startPlayback() {
+            console.log('Starting playback...');
+            playInterval = setInterval(() => {
+                if (!isPlaying) {
+                    clearInterval(playInterval);
+                    return;
+                }
+                playbackTime += 0.1;
+                updateTimeDisplay();
+            }, 100);
         }
 
-        // Beat maker
-        document.getElementById('beatMakerBtn').addEventListener('click', function() {
-            document.getElementById('beatMaker').classList.add('active');
-        });
-
-        document.getElementById('closeBeatMakerBtn').addEventListener('click', function() {
-            document.getElementById('beatMaker').classList.remove('active');
-        });
-
-        // Beat pads
-        document.querySelectorAll('.beat-pad').forEach(pad => {
-            pad.addEventListener('click', function() {
-                this.classList.add('active');
-                setTimeout(() => this.classList.remove('active'), 200);
+        function stopPlayback() {
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+            
+            // Stop all playing audio
+            if (currentlyPlayingAudio) {
+                currentlyPlayingAudio.pause();
+                currentlyPlayingAudio.currentTime = 0;
+                currentlyPlayingAudio = null;
                 
-                // Simulate drum sound
-                playDrumSound(this.dataset.sound);
-            });
-        });
-
-        function playDrumSound(sound) {
-            if (!audioContext) initAudioContext();
-            
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Different frequencies for different drums
-            const frequencies = {
-                kick: 60,
-                snare: 200,
-                hihat: 800,
-                clap: 300,
-                tom: 150,
-                crash: 400,
-                ride: 600,
-                openhat: 1000
-            };
-            
-            oscillator.frequency.setValueAtTime(frequencies[sound] || 200, audioContext.currentTime);
-            oscillator.type = 'sawtooth';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
+                // Reset play buttons
+                document.querySelectorAll('.track-btn').forEach(btn => {
+                    if (btn.textContent.includes('⏸️')) {
+                        btn.textContent = '▶️ Play';
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                currentPlayButton = null;
+            }
         }
 
-        // Tutorial modal
-        document.getElementById('tutorialBtn').addEventListener('click', function() {
-            document.getElementById('tutorialModal').classList.add('active');
-        });
+        function updateTimeDisplay() {
+            const minutes = Math.floor(playbackTime / 60);
+            const seconds = Math.floor(playbackTime % 60);
+            document.getElementById('timeDisplay').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
 
-        document.getElementById('closeTutorialBtn').addEventListener('click', function() {
-            document.getElementById('tutorialModal').classList.remove('active');
-        });
-
-        // Editor panel
-        document.getElementById('editorBtn').addEventListener('click', function() {
-            document.getElementById('editorPanel').classList.add('open');
-        });
-
-        document.getElementById('closeEditorBtn').addEventListener('click', function() {
-            document.getElementById('editorPanel').classList.remove('open');
-        });
-
-        // Add track buttons
+        // OTHER CONTROLS
         document.getElementById('addTrackBtn').addEventListener('click', function() {
             addTrack('audio');
         });
@@ -847,50 +1051,37 @@
             addTrack('audio');
         });
 
-        // Import audio (simulated)
-        document.getElementById('importAudioBtn').addEventListener('click', function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'audio/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    addTrack('imported');
-                    alert(`Imported: ${file.name}`);
-                }
-            };
-            input.click();
-        });
-
-        // Vocal effects
         document.getElementById('vocalEffectsBtn').addEventListener('click', function() {
-            alert('Vocal Effects Panel:\n\n• Noise Reduction\n• De-esser\n• Compression\n• EQ\n• Reverb\n• Pitch Correction\n\nApply these effects to clean up and enhance your vocal recordings!');
+            alert('Vocal Effects Panel:\n\n• Noise Reduction\n• De-esser\n• Compression\n• EQ\n• Reverb\n• Pitch Correction\n\nThese effects would be applied to enhance your vocal recordings.');
         });
 
-        // Editing tools
         document.getElementById('splitToolBtn').addEventListener('click', function() {
-            alert('Split Tool: Click on any track to split it at the playhead position. Use this to separate sections of your audio.');
+            alert('Split Tool: Click on any track to split it at the current position.');
         });
 
         document.getElementById('copyToolBtn').addEventListener('click', function() {
-            alert('Copy Tool: Select a region and click this to copy it to the clipboard.');
+            alert('Copy Tool: Select a region and click this to copy it.');
         });
 
         document.getElementById('pasteToolBtn').addEventListener('click', function() {
-            alert('Paste Tool: Click this to paste copied audio at the playhead position.');
+            alert('Paste Tool: Click this to paste copied audio at the current position.');
         });
 
         document.getElementById('deleteToolBtn').addEventListener('click', function() {
-            alert('Delete Tool: Select a region and click this to remove it from your project.');
+            alert('Delete Tool: Select a region and click this to delete it.');
         });
 
-        // Initialize with one track
-        window.addEventListener('load', function() {
-            addTrack('audio');
-            initAudioContext();
+        // MASTER CONTROLS
+        document.getElementById('masterVolume').addEventListener('input', function() {
+            console.log('Master volume:', this.value);
+            // In a real DAW, this would control global volume
         });
 
-        // Keyboard shortcuts
+        document.getElementById('bpmInput').addEventListener('change', function() {
+            console.log('BPM changed to:', this.value);
+        });
+
+        // KEYBOARD SHORTCUTS
         document.addEventListener('keydown', function(e) {
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -898,468 +1089,33 @@
             } else if (e.ctrlKey && e.key === 't') {
                 e.preventDefault();
                 document.getElementById('splitToolBtn').click();
-            } else if (e.ctrlKey && e.key === 'c') {
-                e.preventDefault();
-                document.getElementById('copyToolBtn').click();
-            } else if (e.ctrlKey && e.key === 'v') {
-                e.preventDefault();
-                document.getElementById('pasteToolBtn').click();
             } else if (e.ctrlKey && e.key === 'z') {
                 e.preventDefault();
                 alert('Undo last action');
             }
         });
-// FIXED FILE UPLOAD FUNCTION
-document.getElementById('importAudioBtn').addEventListener('click', function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'audio/*'; // Accept audio files only
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+
+        // INITIALIZATION
+        window.addEventListener('load', function() {
+            console.log('Universal DAW loading...');
+            initAudioContext();
+            addTrack('audio'); // Add first track
+            console.log('Universal DAW ready!');
             
-            // Create a URL for the audio file
-            const audioUrl = URL.createObjectURL(file);
-            
-            // Add the track with working audio playback
-            addAudioTrack(file.name, audioUrl);
-        }
-    };
-    input.click();
-});
-
-// NEW FUNCTION TO ADD AUDIO TRACK WITH WORKING PLAYBACK
-function addAudioTrack(fileName, audioUrl) {
-    trackCount++;
-    const tracksContainer = document.getElementById('tracksContainer');
-    
-    const trackDiv = document.createElement('div');
-    trackDiv.className = 'track';
-    trackDiv.innerHTML = `
-        <div class="track-info">
-            <div class="track-name">${fileName}</div>
-            <div class="track-controls-track">
-                <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
-                <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
-                <button class="track-btn" onclick="playUploadedAudio('${audioUrl}', this)">▶️ Play</button>
-                <button class="track-btn" onclick="stopUploadedAudio('${audioUrl}', this)">⏹️ Stop</button>
-                <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
-            </div>
-        </div>
-        <div class="track-waveform">
-            <div class="waveform-visual" style="background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);"></div>
-        </div>
-    `;
-    
-    tracksContainer.appendChild(trackDiv);
-    tracks.push({ 
-        id: `track_${Date.now()}`, 
-        name: fileName, 
-        type: 'uploaded', 
-        audioUrl: audioUrl 
-    });
-}
-
-// FIXED AUDIO PLAYBACK FUNCTIONS
-let currentlyPlayingAudio = null;
-let currentPlayButton = null;
-
-function playUploadedAudio(audioUrl, button) {
-    console.log('Playing audio:', audioUrl);
-    
-    // Stop any currently playing audio
-    if (currentlyPlayingAudio) {
-        currentlyPlayingAudio.pause();
-        currentlyPlayingAudio.currentTime = 0;
-        if (currentPlayButton) {
-            currentPlayButton.textContent = '▶️ Play';
-        }
-    }
-    
-    // Create new audio element
-    const audio = new Audio(audioUrl);
-    audio.controls = true; // Show controls for debugging
-    
-    // Set up event listeners
-    audio.onplay = function() {
-        console.log('Audio started playing');
-        button.textContent = '⏸️ Pause';
-        currentPlayButton = button;
-    };
-    
-    audio.onpause = function() {
-        console.log('Audio paused');
-        button.textContent = '▶️ Play';
-    };
-    
-    audio.onended = function() {
-        console.log('Audio finished');
-        button.textContent = '▶️ Play';
-        currentlyPlayingAudio = null;
-        currentPlayButton = null;
-    };
-    
-    audio.onerror = function(e) {
-        console.error('Audio playback error:', e);
-        alert('Error playing audio. The file format might not be supported or the file might be corrupted.');
-    };
-    
-    // Try to play the audio
-    audio.play().then(() => {
-        console.log('Audio playback started successfully');
-        currentlyPlayingAudio = audio;
-    }).catch(err => {
-        console.error('Audio play failed:', err);
-        alert('Failed to play audio: ' + err.message);
-    });
-}
-
-function stopUploadedAudio(audioUrl, button) {
-    if (currentlyPlayingAudio) {
-        currentlyPlayingAudio.pause();
-        currentlyPlayingAudio.currentTime = 0;
-        currentlyPlayingAudio = null;
-        
-        // Reset all play buttons
-        document.querySelectorAll('.track-btn').forEach(btn => {
-            if (btn.textContent.includes('⏸️')) {
-                btn.textContent = '▶️ Play';
-            }
+            // Welcome message
+            setTimeout(() => {
+                console.log('🎵 Universal DAW is ready! Try importing audio or recording.');
+            }, 1000);
         });
-        
-        currentPlayButton = null;
-    }
-}       
-// ENHANCED BEAT MAKER WITH REAL AUDIO
-function playDrumSound(sound) {
-    if (!audioContext) initAudioContext();
-    
-    // Create oscillator for drum sounds
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const filterNode = audioContext.createBiquadFilter();
-    
-    oscillator.connect(filterNode);
-    filterNode.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    // Different drum sound configurations
-    const drumSounds = {
-        kick: {
-            frequency: 60,
-            type: 'sine',
-            filterFreq: 100,
-            duration: 0.3,
-            gain: 0.6
-        },
-        snare: {
-            frequency: 200,
-            type: 'triangle',
-            filterFreq: 1000,
-            duration: 0.15,
-            gain: 0.4
-        },
-        hihat: {
-            frequency: 800,
-            type: 'square',
-            filterFreq: 5000,
-            duration: 0.05,
-            gain: 0.3
-        },
-        clap: {
-            frequency: 300,
-            type: 'sawtooth',
-            filterFreq: 2000,
-            duration: 0.1,
-            gain: 0.4
-        },
-        tom: {
-            frequency: 150,
-            type: 'sine',
-            filterFreq: 300,
-            duration: 0.2,
-            gain: 0.5
-        },
-        crash: {
-            frequency: 400,
-            type: 'sawtooth',
-            filterFreq: 8000,
-            duration: 0.5,
-            gain: 0.3
-        },
-        ride: {
-            frequency: 600,
-            type: 'triangle',
-            filterFreq: 4000,
-            duration: 0.3,
-            gain: 0.35
-        },
-        openhat: {
-            frequency: 1000,
-            type: 'square',
-            filterFreq: 6000,
-            duration: 0.2,
-            gain: 0.25
-        }
-    };
-    
-    const config = drumSounds[sound] || drumSounds.kick;
-    
-    // Configure the audio nodes
-    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
-    oscillator.type = config.type;
-    
-    filterNode.frequency.setValueAtTime(config.filterFreq, audioContext.currentTime);
-    filterNode.type = 'lowpass';
-    
-    gainNode.gain.setValueAtTime(config.gain, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
-    
-    // Add some noise for snare and hi-hat sounds
-    if (sound === 'snare' || sound === 'hihat' || sound === 'clap') {
-        const noiseBuffer = createNoiseBuffer();
-        const noiseSource = audioContext.createBufferSource();
-        const noiseGain = audioContext.createGain();
-        
-        noiseSource.buffer = noiseBuffer;
-        noiseSource.connect(noiseGain);
-        noiseGain.connect(audioContext.destination);
-        
-        noiseGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
-        
-        noiseSource.start(audioContext.currentTime);
-        noiseSource.stop(audioContext.currentTime + config.duration);
-    }
-    
-    // Play the sound
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + config.duration);
-}
 
-// Create noise buffer for snare/hi-hat sounds
-function createNoiseBuffer() {
-    const bufferSize = audioContext.sampleRate * 0.1; // 100ms of noise
-    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1; // Generate white noise
-    }
-    
-    return buffer;
-}
-// ENHANCED RECORDING FUNCTION
-async function startRecording() {
-    try {
-        console.log('Starting recording...');
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
-            } 
+        // ERROR HANDLING
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
         });
-        
-        mediaRecorder = new MediaRecorder(stream);
-        recordedChunks = [];
 
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-                console.log('Recorded chunk:', event.data.size, 'bytes');
-            }
-        };
-
-        mediaRecorder.onstop = () => {
-            console.log('Recording stopped. Chunks:', recordedChunks.length);
-            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            addRecordedTrack('Recording_' + Date.now(), audioUrl);
-        };
-
-        mediaRecorder.onerror = (event) => {
-            console.error('Recording error:', event);
-            alert('Recording error occurred');
-        };
-
-        mediaRecorder.start();
-        console.log('Recording started');
-        isRecording = true;
-        
-        // Update UI
-        document.getElementById('recordBtn').style.background = '#ff6666';
-        document.getElementById('recordBtn').textContent = '⏹';
-        document.getElementById('recordingIndicator').classList.add('active');
-        
-    } catch (err) {
-        console.error('Recording failed:', err);
-        alert('Recording failed: ' + err.message + '\n\nPlease ensure:\n1. Microphone access is allowed\n2. You are using HTTPS or localhost\n3. No other application is using the microphone');
-    }
-}// ENHANCED BEAT MAKER WITH REAL AUDIO
-function playDrumSound(sound) {
-    if (!audioContext) initAudioContext();
-    
-    // Create oscillator for drum sounds
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const filterNode = audioContext.createBiquadFilter();
-    
-    oscillator.connect(filterNode);
-    filterNode.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    // Different drum sound configurations
-    const drumSounds = {
-        kick: {
-            frequency: 60,
-            type: 'sine',
-            filterFreq: 100,
-            duration: 0.3,
-            gain: 0.6
-        },
-        snare: {
-            frequency: 200,
-            type: 'triangle',
-            filterFreq: 1000,
-            duration: 0.15,
-            gain: 0.4
-        },
-        hihat: {
-            frequency: 800,
-            type: 'square',
-            filterFreq: 5000,
-            duration: 0.05,
-            gain: 0.3
-        },
-        clap: {
-            frequency: 300,
-            type: 'sawtooth',
-            filterFreq: 2000,
-            duration: 0.1,
-            gain: 0.4
-        },
-        tom: {
-            frequency: 150,
-            type: 'sine',
-            filterFreq: 300,
-            duration: 0.2,
-            gain: 0.5
-        },
-        crash: {
-            frequency: 400,
-            type: 'sawtooth',
-            filterFreq: 8000,
-            duration: 0.5,
-            gain: 0.3
-        },
-        ride: {
-            frequency: 600,
-            type: 'triangle',
-            filterFreq: 4000,
-            duration: 0.3,
-            gain: 0.35
-        },
-        openhat: {
-            frequency: 1000,
-            type: 'square',
-            filterFreq: 6000,
-            duration: 0.2,
-            gain: 0.25
-        }
-    };
-    
-    const config = drumSounds[sound] || drumSounds.kick;
-    
-    // Configure the audio nodes
-    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
-    oscillator.type = config.type;
-    
-    filterNode.frequency.setValueAtTime(config.filterFreq, audioContext.currentTime);
-    filterNode.type = 'lowpass';
-    
-    gainNode.gain.setValueAtTime(config.gain, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
-    
-    // Add some noise for snare and hi-hat sounds
-    if (sound === 'snare' || sound === 'hihat' || sound === 'clap') {
-        const noiseBuffer = createNoiseBuffer();
-        const noiseSource = audioContext.createBufferSource();
-        const noiseGain = audioContext.createGain();
-        
-        noiseSource.buffer = noiseBuffer;
-        noiseSource.connect(noiseGain);
-        noiseGain.connect(audioContext.destination);
-        
-        noiseGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
-        
-        noiseSource.start(audioContext.currentTime);
-        noiseSource.stop(audioContext.currentTime + config.duration);
-    }
-    
-    // Play the sound
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + config.duration);
-}
-
-// Create noise buffer for snare/hi-hat sounds
-function createNoiseBuffer() {
-    const bufferSize = audioContext.sampleRate * 0.1; // 100ms of noise
-    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1; // Generate white noise
-    }
-    
-    return buffer;
-}// ENHANCED RECORDING FUNCTION
-async function startRecording() {
-    try {
-        console.log('Starting recording...');
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 44100
-            } 
-        });
-        
-        mediaRecorder = new MediaRecorder(stream);
-        recordedChunks = [];
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-                console.log('Recorded chunk:', event.data.size, 'bytes');
-            }
-        };
-
-        mediaRecorder.onstop = () => {
-            console.log('Recording stopped. Chunks:', recordedChunks.length);
-            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            addRecordedTrack('Recording_' + Date.now(), audioUrl);
-        };
-
-        mediaRecorder.onerror = (event) => {
-            console.error('Recording error:', event);
-            alert('Recording error occurred');
-        };
-
-        mediaRecorder.start();
-        console.log('Recording started');
-        isRecording = true;
-        
-        // Update UI
-        document.getElementById('recordBtn').style.background = '#ff6666';
-        document.getElementById('recordBtn').textContent = '⏹';
-        document.getElementById('recordingIndicator').classList.add('active');
-        
-    } catch (err) {
-        console.error('Recording failed:', err);
-        alert('Recording failed: ' + err.message + '\n\nPlease ensure:\n1. Microphone access is allowed\n2. You are using HTTPS or localhost\n3. No other application is using the microphone');
-    }
-}
+        // DEBUG INFO
+        console.log('Universal DAW v2.0 - Enhanced with working audio playback and file upload');
+        console.log('Features: File Upload, Audio Playback, Recording, Beat Maker, Export');
+    </script>
+</body>
+</html>
