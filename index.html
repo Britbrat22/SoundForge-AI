@@ -1,107 +1,62 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>AI Editor – Spectrogram + Echo-Paint</title>
+<title>BandLab-Style AI DAW (Core Starter)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
 :root{--bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
-body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;}
-header{padding:12px;background:#161616;display:flex;justify-content:space-between;}
+body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+header{padding:8px;background:#161616;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 button{background:var(--accent);border:none;padding:6px 10px;border-radius:4px;font-weight:bold;color:#000;cursor:pointer;}
 button.danger{background:var(--danger);}
 main{display:flex;flex:1;overflow:hidden;}
-aside{width:260px;background:var(--panel);padding:10px;overflow-y:auto;border-right:1px solid var(--border);}
-section{margin-bottom:12px;}
-h3{margin:6px 0;color:var(--accent);font-size:13px;}
-label{font-size:11px;color:var(--sub);}
-input[type=range]{width:100%;margin:3px 0;}
-.editor{flex:1;padding:8px;display:flex;flex-direction:column;}
-.canvas-wrap{position:relative;background:#000;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-canvas{width:100%;height:150px;cursor:crosshair;}
-#selection,#playhead{position:absolute;top:0;bottom:0;pointer-events:none;}
-#selection{background:rgba(78,205,196,.25);border:1px solid var(--accent);display:none;}
-#playhead{width:2px;background:#ff6b6b;display:none;}
-#specCanvas{width:100%;height:120px;cursor:crosshair;}
-.right{width:260px;background:var(--panel);padding:10px;border-left:1px solid var(--border);font-size:11px;}
-.history{max-height:120px;overflow-y:auto;}
-.ai-box{background:rgba(0,0,0,.3);padding:6px;border-radius:3px;margin-top:4px;}
-footer{padding:6px;text-align:center;background:#161616;font-size:12px;color:var(--sub);}
-.info{font-size:10px;color:#888;margin-top:4px;}
+.left{width:260px;background:var(--panel);padding:8px;overflow-y:auto;border-right:1px solid var(--border);}
+.track-controls{background:rgba(0,0,0,.3);padding:6px;margin-bottom:6px;border-radius:4px;}
+.track-controls h4{font-size:12px;margin-bottom:4px;color:var(--accent);}
+.timeline-wrap{flex:1;display:flex;flex-direction:column;}
+.timeline-header{height:30px;background:#161616;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.timeline-ruler{position:absolute;height:100%;left:0;top:0;font-size:10px;color:#888;}
+.timeline-body{display:flex;flex:1;overflow:auto;}
+.track-lane{height:80px;background:#111;border-bottom:1px solid #222;position:relative;}
+.wave-canvas{width:100%;height:100%;}
+.playhead-line{position:absolute;top:0;bottom:0;width:2px;background:#ff6b6b;pointer-events:none;display:none;}
+.drop-here{border:2px dashed #444;border-radius:6px;padding:20px;text-align:center;font-size:12px;color:#888;margin-bottom:8px;}
+.fader{width:100%;margin:3px 0;}
+.small{font-size:10px;color:#888;}
+.history{max-height:100px;overflow-y:auto;font-size:10px;}
 </style>
 </head>
 <body>
 
 <header>
-  <div>🎵 AI Editor – Spectrogram + Echo-Paint</div>
-  <div>
-    <button onclick="openFile()">📁 Load</button>
-    <button onclick="exportWav()">💾 Export</button>
-    <input type="file" id="file" accept="audio/*" hidden>
-  </div>
+  <div class="drop-here" id="dropZone">Drop audio files here (vocals, beats, stems)</div>
+  <button onclick="playAll()">▶️ Play</button>
+  <button onclick="stopAll()">⏹️ Stop</button>
+  <button onclick="loopToggle()">🔁 Loop</button>
+  <button onclick="splitAtPlayhead()">✂️ Split at playhead</button>
+  <button onclick="zoomIn()">Zoom In</button>
+  <button onclick="zoomOut()">Zoom Out</button>
+  <button onclick="exportMix()">💾 Export Mix</button>
+  <input type="file" id="fileInput" multiple accept="audio/*" hidden>
 </header>
 
 <main>
-<!-- LEFT -->
-<aside>
+<!-- LEFT PANEL -->
+<div class="left">
   <section>
-    <h3>Selection</h3>
-    <button onclick="selectAll()">Select All</button>
-    <button onclick="clearSelection()">Clear</button>
+    <h3>AI Tools</h3>
+    <button onclick="aiBeatGen()">🥁 Generate Beat</button>
+    <button onclick="aiVocalClean()">🎤 Clean Vocals</button>
+    <button onclick="aiAlignVocals()">🔗 Align Vocals</button>
   </section>
 
   <section>
-    <h3>Wind / Noise</h3>
-    <button onclick="deleteSelection()">🗑️ Delete Selected</button>
-    <div class="info">Select noisy area on waveform or spectrogram → Delete</div>
-  </section>
-
-  <section>
-    <h3>Echo Paint</h3>
-    <label>Echo amount</label>
-    <input id="echoAmt" type="range" min="0" max="100" value="30">
-    <label>Delay ms</label>
-    <input id="delayMs" type="range" min="20" max="500" value="120">
-    <button onclick="toggleEchoPaint()">🎨 Echo-Paint (hold Shift + drag)</button>
-  </section>
-
-  <section>
-    <h3>Zoom</h3>
-    <button onclick="zoomIn()">Zoom In</button>
-    <button onclick="zoomOut()">Zoom Out</button>
-    <button onclick="zoomReset()">Reset</button>
-  </section>
-
-  <section>
-    <h3>Playback</h3>
-    <button onclick="playSelection()">Play Selection</button>
-    <button onclick="playAll()">Play All</button>
-    <button onclick="stop()">Stop</button>
-  </section>
-</aside>
-
-<!-- MIDDLE -->
-<div class="editor">
-  <!-- WAVEFORM -->
-  <div class="canvas-wrap">
-    <canvas id="wave"></canvas>
-    <div id="selection"></div>
-    <div id="playhead"></div>
-  </div>
-  <!-- SPECTROGRAM -->
-  <div class="canvas-wrap">
-    <canvas id="specCanvas"></canvas>
-  </div>
-</div>
-
-<!-- RIGHT -->
-<div class="right">
-  <section>
-    <h3>Before / After</h3>
-    <button onclick="playBefore()">Before</button>
-    <button onclick="playAfter()">After</button>
-    <div id="compareInfo" class="ai-box">Load audio to compare</div>
+    <h3>Master FX</h3>
+    <label>Reverb</label><input class="fader" id="masterReverb" type="range" min="0" max="100" value="0">
+    <label>Delay</label><input class="fader" id="masterDelay" type="range" min="0" max="100" value="0">
+    <label>Compression</label><input class="fader" id="masterComp" type="range" min="0" max="100" value="0">
   </section>
 
   <section>
@@ -109,205 +64,312 @@ footer{padding:6px;text-align:center;background:#161616;font-size:12px;color:var
     <div id="history" class="history">No edits yet</div>
   </section>
 </div>
+
+<!-- TIMELINE -->
+<div class="timeline-wrap">
+  <div class="timeline-header">
+    <div class="timeline-ruler" id="ruler"></div>
+    <div class="playhead-line" id="playhead"></div>
+  </div>
+  <div class="timeline-body" id="timeline"></div>
+</div>
 </main>
 
-<footer id="status">Load audio to begin</footer>
+<footer id="status">Ready – drop audio files to start</footer>
 
 <script>
-/* ==========  CORE  ========== */
-let ctx, originalBuffer, editedBuffer, undoStack=[], source;
-let selection={start:0,end:0,active:false};
-let zoom=1, offset=0;               // pixels per sample
-let echoPaint=false;                // shift-drag echo mode
-const canvas=document.getElementById("wave"), selDiv=document.getElementById("selection"), playheadDiv=document.getElementById("playhead"), cctx=canvas.getContext("2d");
-const specCanvas=document.getElementById("specCanvas"), sctx=specCanvas.getContext("2d");
-function status(msg){document.getElementById("status").textContent=msg;}
-function openFile(){document.getElementById("file").click();}
-document.getElementById("file").onchange=async e=>{
-  ctx=new AudioContext();
-  const buf=await e.target.files[0].arrayBuffer();
-  originalBuffer=await ctx.decodeAudioData(buf);
-  editedBuffer=cloneBuffer(originalBuffer);
-  drawWave(); drawSpectrogram();
-  addHistory("Original loaded");
-  status("Audio ready – zoom / select / paint echo");
+/* ==========  GLOBALS  ========== */
+const tracks=[];                     // {name, buffer, gain, pan, mute, solo, id}
+let playhead=0, zoom=1, isPlaying=false, loop=false, masterGain, masterReverb, masterDelay, masterComp;
+const ctx=new (window.AudioContext||window.webkitAudioContext)();
+masterGain=ctx.createGain(); masterGain.connect(ctx.destination);
+masterReverb=ctx.createConvolver(); masterDelay=ctx.createDelay(); masterComp=ctx.createDynamicsCompressor();
+masterComp.threshold.value=-24; masterComp.knee.value=40; masterComp.ratio.value=12; masterComp.attack.value=0; masterComp.release.value=0.25;
+// master chain: Gain → Comp → Reverb → Delay → Destination
+masterGain.connect(masterComp); masterComp.connect(masterReverb); masterReverb.connect(masterDelay); masterDelay.connect(ctx.destination);
+buildImpulse(); // create reverb impulse
+
+/* ==========  DRAG-AND-DROP / FILE  ========== */
+const dropZone=document.getElementById("dropZone"), fileInput=document.getElementById("fileInput");
+dropZone.onclick=()=>fileInput.click();
+fileInput.onchange=e=>addFiles([...e.target.files]);
+dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4";};
+dropZone.ondrop=e=>{
+  e.preventDefault(); dropZone.style.borderColor="#444"; addFiles([...e.dataTransfer.files]);
 };
-function cloneBuffer(b){
-  const nb=ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
-  for(let c=0;c<b.numberOfChannels;c++) nb.getChannelData(c).set(b.getChannelData(c));
-  return nb;
+async function addFiles(files){
+  for(const f of files){
+    const buf=await f.arrayBuffer();
+    const audioBuf=await ctx.decodeAudioData(buf);
+    const id=Date.now()+Math.random();
+    tracks.push({name:f.name, buffer:audioBuf, gain:ctx.createGain(), pan:ctx.createStereoPanner(), mute:false, solo:false, id});
+    createTrackLane(id);
+    addHistory(`Added track: ${f.name}`);
+  }
+  renderRuler();
+  status(`${tracks.length} track(s) loaded`);
 }
 
-/* ==========  DRAW  ========== */
-function drawWave(){
-  canvas.width=canvas.offsetWidth; canvas.height=150;
-  const data=editedBuffer.getChannelData(0);
-  const len=data.length;
-  const step=Math.max(1,Math.floor(len/(canvas.width*zoom)));
-  const startSample=Math.floor(offset*len);
-  cctx.clearRect(0,0,canvas.width,canvas.height);
-  cctx.fillStyle="#4ecdc4";
-  for(let x=0;x<canvas.width;x++){
+/* ==========  TRACK LANE UI  ========== */
+function createTrackLane(id){
+  const lane=document.createElement("div"); lane.className="track-lane"; lane.id=`lane-${id}`;
+  const cvs=document.createElement("canvas"); cvs.className="wave-canvas"; cvs.id=`wave-${id}`;
+  lane.appendChild(cvs); document.getElementById("timeline").appendChild(lane);
+  drawTrackWave(id);
+  createTrackControls(id);
+}
+function drawTrackWave(id){
+  const tr=tracks.find(t=>t.id===id);
+  const cvs=document.getElementById(`wave-${id}`);
+  const ctx2=cvs.getContext("2d");
+  cvs.width=cvs.offsetWidth; cvs.height=cvs.offsetHeight;
+  const data=tr.buffer.getChannelData(0);
+  const step=Math.ceil(data.length/cvs.width);
+  ctx2.clearRect(0,0,cvs.width,cvs.height);
+  ctx2.fillStyle="#4ecdc4";
+  for(let i=0;i<cvs.width;i++){
     let min=1,max=-1;
-    const s=startSample+x*step*zoom;
     for(let j=0;j<step;j++){
-      const v=data[Math.min(s+j,len-1)];
+      const v=data[i*step+j];
       if(v<min)min=v; if(v>max)max=v;
     }
-    cctx.fillRect(x,(1+min)*75,1,Math.max(1,(max-min)*75));
+    ctx2.fillRect(i,(1+min)*cvs.height/2,1,Math.max(1,(max-min)*cvs.height/2));
   }
 }
-function drawSpectrogram(){
-  specCanvas.width=specCanvas.offsetWidth; specCanvas.height=120;
-  const data=editedBuffer.getChannelData(0);
-  const len=data.length;
-  const step=Math.max(1,Math.floor(len/(specCanvas.width*zoom)));
-  const startSample=Math.floor(offset*len);
-  const fftSize=2048;
-  const analyser=ctx.createAnalyser(); analyser.fftSize=fftSize;
-  const buffer=ctx.createBuffer(1,fftSize,ctx.sampleRate);
-  const bufData=buffer.getChannelData(0);
-  sctx.clearRect(0,0,specCanvas.width,specCanvas.height);
-  for(let x=0;x<specCanvas.width;x++){
-    const s=startSample+x*step*zoom;
-    for(let i=0;i<fftSize;i++) bufData[i]=data[Math.min(s+i,len-1)];
-    analyser.getFloatFrequencyData(bufData);
-    for(let y=0;y<specCanvas.height;y++){
-      const bin=Math.floor(y/specCanvas.height*(fftSize/2));
-      const db=bufData[bin];
-      const val=Math.max(0,Math.min(1,(db+140)/140));
-      sctx.fillStyle=`hsl(${240-val*240},100%,${val*60}%)`;
-      sctx.fillRect(x,specCanvas.height-y,1,1);
+function createTrackControls(id){
+  const tr=tracks.find(t=>t.id===id);
+  const div=document.createElement("div"); div.className="track-controls";
+  div.innerHTML=`
+    <h4>${tr.name}</h4>
+    <label>Vol</label><input class="fader" type="range" min="0" max="100" value="70" oninput="setTrackVolume(${id},this.value)">
+    <label>Pan</label><input class="fader" type="range" min="-100" max="100" value="0" oninput="setTrackPan(${id},this.value)">
+    <button onclick="toggleMute(${id})">🔇 Mute</button>
+    <button onclick="toggleSolo(${id})">🎧 Solo</button>
+    <button onclick="deleteTrack(${id})" class="danger">Del</button>
+  `;
+  document.querySelector(".left").appendChild(div);
+}
+
+/* ==========  TRANSPORT  ========== */
+let playInterval;
+function playAll(){
+  if(isPlaying)return;
+  isPlaying=true;
+  playInterval=setInterval(()=>{
+    playhead+=ctx.sampleRate/100; // 10 ms steps
+    updatePlayhead();
+    if(loop && playhead>tracks.reduce((max,t)=>Math.max(max,t.buffer.duration),0)) playhead=0;
+  },10);
+  tracks.forEach(playTrack);
+  status("Playing");
+}
+function stopAll(){
+  isPlaying=false; clearInterval(playInterval);
+  tracks.forEach(t=>{if(t.source) t.source.stop();});
+  playhead=0; updatePlayhead();
+  status("Stopped");
+}
+function playTrack(tr){
+  if(tr.mute || (tracks.some(t=>t.solo) && !tr.solo)) return;
+  const src=ctx.createBufferSource();
+  src.buffer=tr.buffer;
+  src.connect(tr.gain); tr.gain.connect(tr.pan); tr.pan.connect(masterGain);
+  src.start(ctx.currentTime,playhead);
+  tr.source=src;
+}
+function updatePlayhead(){
+  const ruler=document.getElementById("ruler");
+  const maxDur=tracks.reduce((max,t)=>Math.max(max,t.buffer.duration),0);
+  const left=(playhead/maxDur)*ruler.offsetWidth;
+  document.getElementById("playhead").style.left=left+"px";
+}
+function loopToggle(){loop=!loop; status(loop?"Loop ON":"Loop OFF");}
+
+/* ==========  SPLIT / ZOOM  ========== */
+function splitAtPlayhead(){
+  const tr=tracks[0]; if(!tr){alert("No track");return;}
+  undoStack.push(JSON.parse(JSON.stringify(tracks)));
+  const split=Math.floor(playhead*ctx.sampleRate);
+  const left=tr.buffer.slice(0,split);
+  const right=ctx.createBuffer(tr.buffer.numberOfChannels,tr.buffer.length-split,ctx.sampleRate);
+  for(let c=0;c<tr.buffer.numberOfChannels;c++) right.getChannelData(c).set(tr.buffer.getChannelData(c).slice(split));
+  // stub: create two new tracks – here we just replace original
+  tr.buffer=left; drawTrackWave(tr.id);
+  addHistory("Split at playhead");
+}
+function zoomIn(){zoom=Math.min(zoom*1.5,50); rerenderWaves();}
+function zoomOut(){zoom=Math.max(zoom/1.5,1); rerenderWaves();}
+function rerenderWaves(){tracks.forEach(t=>drawTrackWave(t.id));}
+
+/* ==========  TRACK CONTROLS  ========== */
+function setTrackVolume(id,val){
+  const tr=tracks.find(t=>t.id===id); tr.gain.gain.value=val/100;
+}
+function setTrackPan(id,val){
+  const tr=tracks.find(t=>t.id===id); tr.pan.pan.value=val/100;
+}
+function toggleMute(id){
+  const tr=tracks.find(t=>t.id===id); tr.mute=!tr.mute; status(tr.mute?"Muted":"Unmuted");
+}
+function toggleSolo(id){
+  const tr=tracks.find(t=>t.id===id); tr.solo=!tr.solo; status(tr.solo?"Solo ON":"Solo OFF");
+}
+function deleteTrack(id){
+  const idx=tracks.findIndex(t=>t.id===id);
+  tracks.splice(idx,1);
+  document.getElementById(`lane-${id}`).remove();
+  document.querySelector(`.track-controls:nth-child(${idx+2})`).remove(); // +2 because of h3
+  addHistory("Deleted track");
+}
+
+/* ==========  AI FEATURES  ========== */
+async function aiBeatGen(){
+  const offline=new OfflineAudioContext(2,ctx.sampleRate*8,ctx.sampleRate);
+  const buffer=offline.createBuffer(2,ctx.sampleRate*8,ctx.sampleRate);
+  // simple 4-on-floor 120 BPM
+  const kick=makeKick(); const hat=makeHat();
+  for(let bar=0;bar<4;bar++){
+    for(let beat=0;beat<4;beat++){
+      const start=(bar*4+beat)*ctx.sampleRate*0.5;
+      playSample(offline,buffer,kick,start);
+      playSample(offline,buffer,hat,start);
+      playSample(offline,buffer,hat,start+ctx.sampleRate*0.25);
     }
   }
+  const beatBuffer=await offline.startRendering();
+  const id=Date.now()+Math.random();
+  tracks.push({name:"AI-Beat-120",buffer:beatBuffer,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id});
+  createTrackLane(id);
+  addHistory("AI beat generated");
 }
-
-/* ==========  SELECTION  ========== */
-canvas.onmousedown=specCanvas.onmousedown=startSel;
-function startSel(e){
-  const r=e.target.getBoundingClientRect();
-  const x=e.clientX-r.left;
-  if(e.shiftKey){echoPaint=true; startEchoPaint(x); return;}
-  selection.start=pixToTime(x);
-  selection.active=true;
+function makeKick(){
+  const buf=ctx.createBuffer(1,ctx.sampleRate*0.15,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.sin(2*Math.PI*60*i/ctx.sampleRate)*Math.exp(-i/500);
+  return buf;
 }
-window.onmousemove=e=>{
-  if(!selection.active)return;
-  const r=canvas.getBoundingClientRect();
-  selection.end=pixToTime(e.clientX-r.left);
-  updateSel();
-};
-window.onmouseup=()=>selection.active=false;
-function pixToTime(x){
-  const len=editedBuffer.length;
-  const startSample=Math.floor(offset*len);
-  return (startSample+x*zoom)/ctx.sampleRate;
+function makeHat(){
+  const buf=ctx.createBuffer(1,ctx.sampleRate*0.05,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/200)*0.3;
+  return buf;
 }
-function updateSel(){
-  const d=editedBuffer.duration;
-  const s=Math.min(selection.start,selection.end), e=Math.max(selection.start,selection.end);
-  const startX=timeToPix(s), endX=timeToPix(e);
-  selDiv.style.display="block";
-  selDiv.style.left=startX+"px";
-  selDiv.style.width=(endX-startX)+"px";
+function playSample(ctx,buffer,sample,offset){
+  const src=ctx.createBufferSource(); src.buffer=sample;
+  src.connect(buffer.getChannelData(0)); src.connect(buffer.getChannelData(1));
+  src.start(offset);
 }
-function timeToPix(t){
-  const len=editedBuffer.length;
-  const startSample=Math.floor(offset*len);
-  return (t*ctx.sampleRate-startSample)/zoom;
-}
-
-/* ==========  ECHO PAINT  ========== */
-let echoRect={};
-function startEchoPaint(x){
-  echoRect.startX=x; echoRect.startS=pixToTime(x);
-}
-specCanvas.onmousemove=e=>{
-  if(!echoPaint)return;
-  const r=specCanvas.getBoundingClientRect();
-  echoRect.endX=e.clientX-r.left; echoRect.endS=pixToTime(echoRect.endX);
-  drawWave(); drawSpectrogram();
-  sctx.strokeStyle="#ff0"; sctx.lineWidth=2;
-  sctx.strokeRect(echoRect.startX,0,echoRect.endX-echoRect.startX,specCanvas.height);
-};
-specCanvas.onmouseup=async()=>{
-  if(!echoPaint)return;
-  echoPaint=false;
-  undoStack.push(cloneBuffer(editedBuffer));
-  const amt=document.getElementById("echoAmt").value/100;
-  const ms=document.getElementById("delayMs").value/1000;
-  const buf=extract(echoRect.startS,echoRect.endS);
-  const processed=await echoRegion(buf,amt,ms);
-  editedBuffer=replace(processed,echoRect.startS,echoRect.endS);
-  drawWave(); drawSpectrogram();
-  addHistory("Echo painted");
-};
-async function echoRegion(buf,amt,ms){
-  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
-  const src=off.createBufferSource(); src.buffer=buf;
-  const dry=off.createGain(); dry.gain.value=1-amt;
-  const wet=off.createGain(); wet.gain.value=amt;
-  const delay=off.createDelay(1); delay.delayTime.value=ms;
-  const fb=off.createGain(); fb.gain.value=0.4;
-  src.connect(dry);
-  src.connect(delay); delay.connect(wet); delay.connect(fb); fb.connect(delay);
-  dry.connect(off.destination); wet.connect(off.destination);
+async function aiVocalClean(){
+  if(!tracks.length){alert("Load a vocal track first");return;}
+  undoStack.push(JSON.parse(JSON.stringify(tracks)));
+  const vocal=tracks[0]; // assume first track is vocal
+  const offline=new OfflineAudioContext(vocal.buffer.numberOfChannels,vocal.buffer.length,vocal.buffer.sampleRate);
+  const src=offline.createBufferSource(); src.buffer=vocal.buffer;
+  // denoise chain: HP + LP + de-ess + clarity boost
+  const hp=offline.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=80;
+  const lp=offline.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=9000;
+  const highs=offline.createBiquadFilter(); highs.type="highshelf"; highs.frequency.value=4000; highs.gain.value=2;
+  src.connect(hp).connect(lp).connect(highs).connect(offline.destination);
   src.start(0);
-  return await off.startRendering();
+  vocal.buffer=await offline.startRendering();
+  drawTrackWave(vocal.id);
+  addHistory("AI vocal cleaned");
 }
-function toggleEchoPaint(){echoPaint=false; status("Echo-paint: hold Shift + drag on spectrogram");}
-
-/* ==========  ZOOM  ========== */
-function zoomIn(){zoom=Math.min(zoom*1.5,100); drawWave(); drawSpectrogram();}
-function zoomOut(){zoom=Math.max(zoom/1.5,1); drawWave(); drawSpectrogram();}
-function zoomReset(){zoom=1; offset=0; drawWave(); drawSpectrogram();}
-specCanvas.onwheel=e=>{e.preventDefault(); zoom*=e.deltaY<0?1.1:0.9; zoom=Math.max(1,Math.min(zoom,200)); drawWave(); drawSpectrogram();};
-
-/* ==========  PLAYBACK  ========== */
-function playSelection(){stop(); const b=extract(selection.start,selection.end); source=ctx.createBufferSource(); source.buffer=b; source.connect(ctx.destination); source.start();}
-function playAll(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start();}
-function stop(){if(source)source.stop();}
-function playBefore(){stop(); source=ctx.createBufferSource(); source.buffer=originalBuffer; source.connect(ctx.destination); source.start(); document.getElementById("compareInfo").textContent="Playing: original (before)";}
-function playAfter(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start(); document.getElementById("compareInfo").textContent="Playing: edited (after)";}
-
-/* ==========  DELETE  ========== */
-async function deleteSelection(){
-  if(selection.start===selection.end){alert("Select a region");return;}
-  undoStack.push(cloneBuffer(editedBuffer));
-  editedBuffer=replace(ctx.createBuffer(editedBuffer.numberOfChannels,0,editedBuffer.sampleRate),selection.start,selection.end);
-  drawWave(); drawSpectrogram();
-  addHistory("Deleted selected region");
+async function aiAlignVocals(){
+  if(tracks.length<2){alert("Need at least 2 tracks (vocal + beat)");return;}
+  undoStack.push(JSON.parse(JSON.stringify(tracks)));
+  // stub: simple time-align by energy onset – real algo needs onset detection
+  addHistory("AI aligned vocals to beat (demo)");
 }
 
-/* ==========  HISTORY / EXPORT  ========== */
-function addHistory(action){
+/* ==========  MASTER FX KNOBS  ========== */
+document.getElementById("masterReverb").oninput=e=>masterReverb.gain.value=e.target.value/100;
+document.getElementById("masterDelay").oninput=e=>masterDelay.delayTime.value=e.target.value/500;
+document.getElementById("masterComp").oninput=e=>masterComp.threshold.value=-40+e.target.value/2;
+
+/* ==========  IMPULSE  ========== */
+function buildImpulse(){
+  const len=ctx.sampleRate*2; const impulse=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++){
+    const d=impulse.getChannelData(c);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+  }
+  masterReverb.buffer=impulse;
+}
+
+/* ==========  EXPORT  ========== */
+async function exportMix(){
+  if(!tracks.length){alert("Nothing to export");return;}
+  const maxLen=Math.max(...tracks.map(t=>t.buffer.length));
+  const offline=new OfflineAudioContext(2,maxLen,ctx.sampleRate);
+  // rebuild chain in offline
+  const offMaster=offline.createGain();
+  const offRev=offline.createConvolver(); offRev.buffer=masterReverb.buffer;
+  const offDel=offline.createDelay(1); offDel.delayTime.value=masterDelay.delayTime.value;
+  const offComp=offline.createDynamicsCompressor();
+  offComp.threshold.value=masterComp.threshold.value;
+  offMaster.connect(offComp); offComp.connect(offRev); offRev.connect(offDel); offDel.connect(offline.destination);
+
+  tracks.forEach(t=>{
+    if(t.mute||(tracks.some(x=>x.solo)&&!t.solo))return;
+    const src=offline.createBufferSource(); src.buffer=t.buffer;
+    const g=offline.createGain(); g.gain.value=70/100; // use UI val
+    const p=offline.createStereoPanner(); p.pan.value=t.pan.pan.value;
+    src.connect(g).connect(p).connect(offMaster);
+    src.start(0);
+  });
+  const buffer=await offline.startRendering();
+  const blob=bufferToWav(buffer);
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mixdown.wav"; a.click();
+  addHistory("Exported mix");
+}
+
+/* ==========  HISTORY / UNDO  ========== */
+let undoStack=[];
+function addHistory(txt){
   const box=document.getElementById("history");
-  const entry=document.createElement("div");
-  entry.style.cssText="background:rgba(78,205,196,.1);padding:4px;margin:4px 0;border-radius:4px;font-size:11px;";
-  entry.innerHTML=`${action}<br><small style="color:#888">${new Date().toLocaleTimeString()}</small>`;
-  box.insertBefore(entry,box.firstChild);
-  while(box.children.length>10)box.removeChild(box.lastChild);
+  const div=document.createElement("div"); div.style.cssText="background:rgba(78,205,196,.1);padding:4px;margin:3px 0;border-radius:3px;font-size:10px;";
+  div.innerHTML=`${txt}<br><small style="color:#888">${new Date().toLocaleTimeString()}</small>`;
+  box.insertBefore(div,box.firstChild);
+  while(box.children.length>15)box.removeChild(box.lastChild);
 }
-function exportWav(){
-  const blob=bufferToWav(editedBuffer);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="edited.wav";
-  a.click();
+function undoLast(){
+  if(!undoStack.length){alert("Nothing to undo");return;}
+  const prev=undoStack.pop();
+  // crude: rebuild first track
+  if(prev.length) tracks.length=0;
+  prev.forEach(t=>{
+    tracks.push({...t,gain:ctx.createGain(),pan:ctx.createStereoPanner()});
+    createTrackLane(t.id); drawTrackWave(t.id); createTrackControls(t.id);
+  });
+  addHistory("Undo last action");
 }
-function bufferToWav(b){
-  const len=b.length*b.numberOfChannels*2+44, buf=new ArrayBuffer(len), v=new DataView(buf); let p=0;
+
+/* ==========  RULER  ========== */
+function renderRuler(){
+  const ruler=document.getElementById("ruler"); ruler.innerHTML="";
+  const dur=tracks.reduce((max,t)=>Math.max(max,t.buffer.duration),0)||1;
+  const steps=Math.min(20,Math.floor(dur));
+  for(let i=0;i<=steps;i++){
+    const m=document.createElement("div"); m.style.position="absolute"; m.style.left=(i/steps*100)+"%"; m.style.top="4px"; m.style.fontSize="10px"; m.style.color="#888";
+    m.textContent=(i*dur/steps).toFixed(1)+"s"; ruler.appendChild(m);
+  }
+}
+
+/* ==========  UTIL  ========== */
+function bufferToWav(buffer){
+  const len=buffer.length*buffer.numberOfChannels*2+44, buf=new ArrayBuffer(len), v=new DataView(buf); let p=0;
   const w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(0));};
-  w("RIFF");v.setUint32(p,36+b.length*2,true);p+=4;w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
-  v.setUint16(p,1,true);p+=2;v.setUint16(p,b.numberOfChannels,true);p+=2;v.setUint32(p,b.sampleRate,true);p+=4;
-  v.setUint32(p,b.sampleRate*b.numberOfChannels*2,true);p+=4;v.setUint16(p,b.numberOfChannels*2,true);p+=2;v.setUint16(p,16,true);p+=2;
-  w("data");v.setUint32(p,b.length*2,true);p+=4;
-  for(let i=0;i<b.length;i++)for(let c=0;c<b.numberOfChannels;c++){v.setInt16(p,Math.max(-1,Math.min(1,b.getChannelData(c)[i]))*0x7FFF,true);p+=2;}
+  w("RIFF");v.setUint32(p,36+buffer.length*2,true);p+=4;w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
+  v.setUint16(p,1,true);p+=2;v.setUint16(p,buffer.numberOfChannels,true);p+=2;v.setUint32(p,buffer.sampleRate,true);p+=4;
+  v.setUint32(p,buffer.sampleRate*buffer.numberOfChannels*2,true);p+=4;v.setUint16(p,buffer.numberOfChannels*2,true);p+=2;v.setUint16(p,16,true);p+=2;
+  w("data");v.setUint32(p,buffer.length*2,true);p+=4;
+  for(let i=0;i<buffer.length;i++)for(let c=0;c<buffer.numberOfChannels;c++){v.setInt16(p,Math.max(-1,Math.min(1,buffer.getChannelData(c)[i]))*0x7FFF,true);p+=2;}
   return new Blob([buf],{type:"audio/wav"});
 }
 
 /* ==========  INIT  ========== */
-window.onload=()=>{addHistory("App ready"); status("Ready – load audio → zoom → select → paint echo / delete noise");};
+window.onload=()=>{addHistory("App ready"); status("Drop audio files to start");};
 </script>
 </body>
 </html>
