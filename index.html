@@ -1031,3 +1031,335 @@ function stopUploadedAudio(audioUrl, button) {
         currentPlayButton = null;
     }
 }       
+// ENHANCED BEAT MAKER WITH REAL AUDIO
+function playDrumSound(sound) {
+    if (!audioContext) initAudioContext();
+    
+    // Create oscillator for drum sounds
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const filterNode = audioContext.createBiquadFilter();
+    
+    oscillator.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Different drum sound configurations
+    const drumSounds = {
+        kick: {
+            frequency: 60,
+            type: 'sine',
+            filterFreq: 100,
+            duration: 0.3,
+            gain: 0.6
+        },
+        snare: {
+            frequency: 200,
+            type: 'triangle',
+            filterFreq: 1000,
+            duration: 0.15,
+            gain: 0.4
+        },
+        hihat: {
+            frequency: 800,
+            type: 'square',
+            filterFreq: 5000,
+            duration: 0.05,
+            gain: 0.3
+        },
+        clap: {
+            frequency: 300,
+            type: 'sawtooth',
+            filterFreq: 2000,
+            duration: 0.1,
+            gain: 0.4
+        },
+        tom: {
+            frequency: 150,
+            type: 'sine',
+            filterFreq: 300,
+            duration: 0.2,
+            gain: 0.5
+        },
+        crash: {
+            frequency: 400,
+            type: 'sawtooth',
+            filterFreq: 8000,
+            duration: 0.5,
+            gain: 0.3
+        },
+        ride: {
+            frequency: 600,
+            type: 'triangle',
+            filterFreq: 4000,
+            duration: 0.3,
+            gain: 0.35
+        },
+        openhat: {
+            frequency: 1000,
+            type: 'square',
+            filterFreq: 6000,
+            duration: 0.2,
+            gain: 0.25
+        }
+    };
+    
+    const config = drumSounds[sound] || drumSounds.kick;
+    
+    // Configure the audio nodes
+    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
+    oscillator.type = config.type;
+    
+    filterNode.frequency.setValueAtTime(config.filterFreq, audioContext.currentTime);
+    filterNode.type = 'lowpass';
+    
+    gainNode.gain.setValueAtTime(config.gain, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
+    
+    // Add some noise for snare and hi-hat sounds
+    if (sound === 'snare' || sound === 'hihat' || sound === 'clap') {
+        const noiseBuffer = createNoiseBuffer();
+        const noiseSource = audioContext.createBufferSource();
+        const noiseGain = audioContext.createGain();
+        
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.connect(noiseGain);
+        noiseGain.connect(audioContext.destination);
+        
+        noiseGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
+        
+        noiseSource.start(audioContext.currentTime);
+        noiseSource.stop(audioContext.currentTime + config.duration);
+    }
+    
+    // Play the sound
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + config.duration);
+}
+
+// Create noise buffer for snare/hi-hat sounds
+function createNoiseBuffer() {
+    const bufferSize = audioContext.sampleRate * 0.1; // 100ms of noise
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1; // Generate white noise
+    }
+    
+    return buffer;
+}
+// ENHANCED RECORDING FUNCTION
+async function startRecording() {
+    try {
+        console.log('Starting recording...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            } 
+        });
+        
+        mediaRecorder = new MediaRecorder(stream);
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+                console.log('Recorded chunk:', event.data.size, 'bytes');
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            console.log('Recording stopped. Chunks:', recordedChunks.length);
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            addRecordedTrack('Recording_' + Date.now(), audioUrl);
+        };
+
+        mediaRecorder.onerror = (event) => {
+            console.error('Recording error:', event);
+            alert('Recording error occurred');
+        };
+
+        mediaRecorder.start();
+        console.log('Recording started');
+        isRecording = true;
+        
+        // Update UI
+        document.getElementById('recordBtn').style.background = '#ff6666';
+        document.getElementById('recordBtn').textContent = '⏹';
+        document.getElementById('recordingIndicator').classList.add('active');
+        
+    } catch (err) {
+        console.error('Recording failed:', err);
+        alert('Recording failed: ' + err.message + '\n\nPlease ensure:\n1. Microphone access is allowed\n2. You are using HTTPS or localhost\n3. No other application is using the microphone');
+    }
+}// ENHANCED BEAT MAKER WITH REAL AUDIO
+function playDrumSound(sound) {
+    if (!audioContext) initAudioContext();
+    
+    // Create oscillator for drum sounds
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const filterNode = audioContext.createBiquadFilter();
+    
+    oscillator.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Different drum sound configurations
+    const drumSounds = {
+        kick: {
+            frequency: 60,
+            type: 'sine',
+            filterFreq: 100,
+            duration: 0.3,
+            gain: 0.6
+        },
+        snare: {
+            frequency: 200,
+            type: 'triangle',
+            filterFreq: 1000,
+            duration: 0.15,
+            gain: 0.4
+        },
+        hihat: {
+            frequency: 800,
+            type: 'square',
+            filterFreq: 5000,
+            duration: 0.05,
+            gain: 0.3
+        },
+        clap: {
+            frequency: 300,
+            type: 'sawtooth',
+            filterFreq: 2000,
+            duration: 0.1,
+            gain: 0.4
+        },
+        tom: {
+            frequency: 150,
+            type: 'sine',
+            filterFreq: 300,
+            duration: 0.2,
+            gain: 0.5
+        },
+        crash: {
+            frequency: 400,
+            type: 'sawtooth',
+            filterFreq: 8000,
+            duration: 0.5,
+            gain: 0.3
+        },
+        ride: {
+            frequency: 600,
+            type: 'triangle',
+            filterFreq: 4000,
+            duration: 0.3,
+            gain: 0.35
+        },
+        openhat: {
+            frequency: 1000,
+            type: 'square',
+            filterFreq: 6000,
+            duration: 0.2,
+            gain: 0.25
+        }
+    };
+    
+    const config = drumSounds[sound] || drumSounds.kick;
+    
+    // Configure the audio nodes
+    oscillator.frequency.setValueAtTime(config.frequency, audioContext.currentTime);
+    oscillator.type = config.type;
+    
+    filterNode.frequency.setValueAtTime(config.filterFreq, audioContext.currentTime);
+    filterNode.type = 'lowpass';
+    
+    gainNode.gain.setValueAtTime(config.gain, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
+    
+    // Add some noise for snare and hi-hat sounds
+    if (sound === 'snare' || sound === 'hihat' || sound === 'clap') {
+        const noiseBuffer = createNoiseBuffer();
+        const noiseSource = audioContext.createBufferSource();
+        const noiseGain = audioContext.createGain();
+        
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.connect(noiseGain);
+        noiseGain.connect(audioContext.destination);
+        
+        noiseGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + config.duration);
+        
+        noiseSource.start(audioContext.currentTime);
+        noiseSource.stop(audioContext.currentTime + config.duration);
+    }
+    
+    // Play the sound
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + config.duration);
+}
+
+// Create noise buffer for snare/hi-hat sounds
+function createNoiseBuffer() {
+    const bufferSize = audioContext.sampleRate * 0.1; // 100ms of noise
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1; // Generate white noise
+    }
+    
+    return buffer;
+}// ENHANCED RECORDING FUNCTION
+async function startRecording() {
+    try {
+        console.log('Starting recording...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            } 
+        });
+        
+        mediaRecorder = new MediaRecorder(stream);
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+                console.log('Recorded chunk:', event.data.size, 'bytes');
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            console.log('Recording stopped. Chunks:', recordedChunks.length);
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            addRecordedTrack('Recording_' + Date.now(), audioUrl);
+        };
+
+        mediaRecorder.onerror = (event) => {
+            console.error('Recording error:', event);
+            alert('Recording error occurred');
+        };
+
+        mediaRecorder.start();
+        console.log('Recording started');
+        isRecording = true;
+        
+        // Update UI
+        document.getElementById('recordBtn').style.background = '#ff6666';
+        document.getElementById('recordBtn').textContent = '⏹';
+        document.getElementById('recordingIndicator').classList.add('active');
+        
+    } catch (err) {
+        console.error('Recording failed:', err);
+        alert('Recording failed: ' + err.message + '\n\nPlease ensure:\n1. Microphone access is allowed\n2. You are using HTTPS or localhost\n3. No other application is using the microphone');
+    }
+}
