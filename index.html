@@ -1,1032 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Audio Editor - Selective Editing & Effects</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; overflow: hidden; height: 100vh; }
-        
-        .daw-container { display: flex; flex-direction: column; height: 100vh; }
-        .header { background: linear-gradient(135deg, #1a1a1a, #252525); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .main-content { display: flex; flex: 1; overflow: hidden; }
-        
-        /* LEFT PANEL - EDITING TOOLS */
-        .edit-panel { width: 350px; background: #1a1a1a; padding: 20px; overflow-y: auto; border-right: 1px solid #333; }
-        .edit-section { margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; }
-        .edit-section h3 { color: #4ecdc4; margin-bottom: 15px; font-size: 16px; }
-        
-        /* SELECTION CONTROLS */
-        .selection-controls { display: flex; gap: 10px; margin-bottom: 15px; }
-        .time-input { background: #333; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px; width: 80px; }
-        
-        /* EFFECT CONTROLS */
-        .effect-control { margin-bottom: 15px; }
-        .effect-control label { display: block; color: #ccc; margin-bottom: 5px; font-size: 14px; }
-        .effect-slider { width: 100%; margin-bottom: 5px; }
-        .effect-value { text-align: center; color: #4ecdc4; font-size: 12px; }
-        
-        /* MIDDLE PANEL - WAVEFORM EDITOR */
-        .editor-panel { flex: 1; background: #0f0f0f; padding: 20px; overflow-y: auto; }
-        .waveform-editor { background: #000; border: 2px solid #333; border-radius: 8px; position: relative; min-height: 300px; }
-        
-        /* TIMELINE RULER */
-        .timeline-ruler { 
-            height: 30px; background: #1a1a1a; border-bottom: 1px solid #444; 
-            position: relative; overflow: hidden;
-        }
-        .time-marker { 
-            position: absolute; top: 5px; color: #888; font-size: 10px; 
-            border-left: 1px solid #444; padding-left: 2px;
-        }
-        
-        /* WAVEFORM DISPLAY */
-        .waveform-display { 
-            height: 200px; position: relative; cursor: crosshair;
-            background: linear-gradient(to bottom, #111 0%, #000 50%, #111 100%);
-        }
-        .selection-region { 
-            position: absolute; background: rgba(78, 205, 196, 0.3); 
-            border: 2px solid #4ecdc4; border-radius: 3px;
-            display: none; pointer-events: none;
-        }
-        .playhead { 
-            position: absolute; width: 2px; background: #ff6b6b; 
-            height: 100%; display: none; pointer-events: none;
-        }
-        
-        /* RIGHT PANEL - COMPARISON */
-        .compare-panel { width: 300px; background: #1a1a1a; padding: 20px; border-left: 1px solid #333; }
-        .comparison-controls { display: flex; gap: 10px; margin-bottom: 20px; }
-        .compare-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .before-btn { background: #666; color: white; }
-        .after-btn { background: #4ecdc4; color: white; }
-        .active { box-shadow: 0 0 10px rgba(78, 205, 196, 0.5); }
-        
-        /* BUTTONS */
-        .btn { 
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1); 
-            color: white; border: none; padding: 10px 15px; 
-            border-radius: 6px; cursor: pointer; font-weight: bold; 
-            margin: 5px 0; transition: all 0.3s ease;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4); }
-        .btn-danger { background: linear-gradient(135deg, #ff6b6b, #ff8555); }
-        
-        /* STATUS BAR */
-        .status-bar { 
-            background: #1a1a1a; padding: 10px 20px; 
-            border-top: 1px solid #333; font-size: 14px;
-            color: #ccc; text-align: center;
-        }
-        
-        /* SCROLLBARS */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-        ::-webkit-scrollbar-thumb { background: #4ecdc4; border-radius: 4px; }
-    </style>
+<meta charset="UTF-8" />
+<title>AI Audio Editor – Working DAW</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body {
+  margin: 0;
+  background: #0b0b0b;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+header {
+  padding: 12px;
+  background: #161616;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+button {
+  background: #4ecdc4;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button.danger { background: #ff6b6b; }
+main {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+aside {
+  width: 260px;
+  padding: 12px;
+  background: #151515;
+  overflow-y: auto;
+}
+section {
+  margin-bottom: 15px;
+}
+h3 {
+  margin: 8px 0;
+  color: #4ecdc4;
+}
+input[type=range] {
+  width: 100%;
+}
+.editor {
+  flex: 1;
+  padding: 10px;
+}
+canvas {
+  width: 100%;
+  height: 200px;
+  background: #000;
+  cursor: crosshair;
+}
+#selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(78,205,196,0.3);
+  border: 2px solid #4ecdc4;
+  pointer-events: none;
+}
+footer {
+  padding: 8px;
+  text-align: center;
+  background: #161616;
+  font-size: 14px;
+}
+</style>
 </head>
+
 <body>
-    <div class="daw-container">
-        <header class="header">
-            <div class="logo">🎵 AI Audio Editor Pro</div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn" onclick="loadAudioFile()">📁 Load Audio</button>
-                <button class="btn" onclick="exportEditedAudio()">💾 Export</button>
-                <input type="file" id="audioFileInput" accept="audio/*" style="display: none;" onchange="handleFileLoad(this.files[0])">
-            </div>
-        </header>
+<header>
+  <div>🎵 AI Audio Editor (Stable)</div>
+  <div>
+    <button onclick="openFile()">Load</button>
+    <button onclick="exportWav()">Export</button>
+    <input type="file" id="file" accept="audio/*" hidden />
+  </div>
+</header>
 
-        <div class="main-content">
-            <!-- LEFT PANEL - EDITING TOOLS -->
-            <div class="edit-panel">
-                <div class="edit-section">
-                    <h3>🎯 SELECTION TOOLS</h3>
-                    <div class="selection-controls">
-                        <div>
-                            <label style="color: #ccc; font-size: 12px;">Start (seconds)</label>
-                            <input type="number" class="time-input" id="selectionStart" value="0" step="0.1">
-                        </div>
-                        <div>
-                            <label style="color: #ccc; font-size: 12px;">End (seconds)</label>
-                            <input type="number" class="time-input" id="selectionEnd" value="0" step="0.1">
-                        </div>
-                    </div>
-                    <button class="btn" onclick="selectAll()" style="width: 100%;">📋 Select All</button>
-                    <button class="btn" onclick="clearSelection()" style="width: 100%;">❌ Clear Selection</button>
-                </div>
+<main>
+<aside>
+<section>
+<h3>Selection</h3>
+<button onclick="selectAll()">Select All</button>
+<button onclick="clearSelection()">Clear</button>
+</section>
 
-                <div class="edit-section">
-                    <h3>🎤 VOCAL EDITING</h3>
-                    <button class="btn" onclick="removeVocals()" style="width: 100%;">🗣️ Remove Vocals</button>
-                    <button class="btn" onclick="isolateVocals()" style="width: 100%;">🎯 Isolate Vocals</button>
-                    <button class="btn" onclick="enhanceVocals()" style="width: 100%;">✨ Enhance Vocals</button>
-                    
-                    <div class="effect-control">
-                        <label>Vocal Volume</label>
-                        <input type="range" class="effect-slider" id="vocalVolume" min="0" max="200" value="100">
-                        <div class="effect-value" id="vocalVolumeValue">100%</div>
-                    </div>
-                </div>
+<section>
+<h3>Effects</h3>
+<label>Reverb</label>
+<input id="reverb" type="range" min="0" max="100" value="0">
+<label>Echo</label>
+<input id="echo" type="range" min="0" max="100" value="0">
+<label>Pitch</label>
+<input id="pitch" type="range" min="-12" max="12" value="0">
+<button onclick="applyEffects()">Apply</button>
+</section>
 
-                <div class="edit-section">
-                    <h3>🥁 BEAT EDITING</h3>
-                    <button class="btn" onclick="removeBeat()" style="width: 100%;">🥁 Remove Beat</button>
-                    <button class="btn" onclick="isolateBeat()" style="width: 100%;">🎯 Isolate Beat</button>
-                    <button class="btn" onclick="enhanceBeat()" style="width: 100%;">⚡ Enhance Beat</button>
-                    
-                    <div class="effect-control">
-                        <label>Beat Volume</label>
-                        <input type="range" class="effect-slider" id="beatVolume" min="0" max="200" value="100">
-                        <div class="effect-value" id="beatVolumeValue">100%</div>
-                    </div>
-                </div>
+<section>
+<h3>Utility</h3>
+<button onclick="fadeIn()">Fade In</button>
+<button onclick="fadeOut()">Fade Out</button>
+<button class="danger" onclick="deleteSelection()">Delete</button>
+<button onclick="undo()">Undo</button>
+</section>
 
-                <div class="edit-section">
-                    <h3>🎛️ EFFECTS</h3>
-                    <div class="effect-control">
-                        <label>Reverb</label>
-                        <input type="range" class="effect-slider" id="reverbAmount" min="0" max="100" value="0">
-                        <div class="effect-value" id="reverbValue">0%</div>
-                    </div>
-                    
-                    <div class="effect-control">
-                        <label>Echo/Delay</label>
-                        <input type="range" class="effect-slider" id="echoAmount" min="0" max="100" value="0">
-                        <div class="effect-value" id="echoValue">0%</div>
-                    </div>
-                    
-                    <div class="effect-control">
-                        <label>Pitch Shift</label>
-                        <input type="range" class="effect-slider" id="pitchShift" min="-12" max="12" value="0">
-                        <div class="effect-value" id="pitchValue">0 semitones</div>
-                    </div>
-                    
-                    <button class="btn" onclick="applySelectedEffects()" style="width: 100%;">✨ Apply to Selection</button>
-                </div>
+<section>
+<h3>Playback</h3>
+<button onclick="playSelection()">Play Selection</button>
+<button onclick="playAll()">Play All</button>
+<button onclick="stop()">Stop</button>
+</section>
+</aside>
 
-                <div class="edit-section">
-                    <h3>🔧 UTILITY</h3>
-                    <button class="btn btn-danger" onclick="deleteSelection()" style="width: 100%;">🗑️ Delete Selection</button>
-                    <button class="btn" onclick="fadeInSelection()" style="width: 100%;">📈 Fade In</button>
-                    <button class="btn" onclick="fadeOutSelection()" style="width: 100%;">📉 Fade Out</button>
-                </div>
-            </div>
+<div class="editor">
+<div style="position:relative">
+<canvas id="wave"></canvas>
+<div id="selection"></div>
+</div>
+</div>
+</main>
 
-            <!-- MIDDLE PANEL - WAVEFORM EDITOR -->
-            <div class="editor-panel">
-                <div class="waveform-editor">
-                    <div class="timeline-ruler" id="timelineRuler"></div>
-                    <div class="waveform-display" id="waveformDisplay">
-                        <div class="selection-region" id="selectionRegion"></div>
-                        <div class="playhead" id="playhead"></div>
-                        <canvas id="waveformCanvas" style="width: 100%; height: 100%;"></canvas>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="btn" onclick="playSelected()" style="margin: 0 10px;">▶️ Play Selection</button>
-                    <button class="btn" onclick="playAll()" style="margin: 0 10px;">▶️ Play All</button>
-                    <button class="btn" onclick="stopPlayback()" style="margin: 0 10px;">⏹️ Stop</button>
-                </div>
-            </div>
+<footer id="status">Load audio to begin</footer>
 
-            <!-- RIGHT PANEL - COMPARISON -->
-            <div class="compare-panel">
-                <div class="edit-section">
-                    <h3>🔄 BEFORE/AFTER</h3>
-                    <div class="comparison-controls">
-                        <button class="compare-btn before-btn active" id="beforeBtn" onclick="playBefore()">Before</button>
-                        <button class="compare-btn after-btn" id="afterBtn" onclick="playAfter()">After</button>
-                    </div>
-                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; margin-top: 10px;">
-                        <div id="comparisonInfo" style="font-size: 12px; color: #ccc;">
-                            Load audio to compare edits...
-                        </div>
-                    </div>
-                </div>
+<script>
+let ctx;
+let originalBuffer;
+let editedBuffer;
+let undoStack = [];
+let source;
 
-                <div class="edit-section">
-                    <h3>📊 EDIT HISTORY</h3>
-                    <div id="editHistory" style="max-height: 300px; overflow-y: auto;">
-                        <div style="color: #888; font-size: 12px; text-align: center;">
-                            No edits yet...
-                        </div>
-                    </div>
-                    <button class="btn" onclick="undoLastEdit()" style="width: 100%; margin-top: 10px;">↶ Undo Last</button>
-                    <button class="btn" onclick="clearHistory()" style="width: 100%;">🗑️ Clear All</button>
-                </div>
+let selection = { start: 0, end: 0, active: false };
 
-                <div class="edit-section">
-                    <h3>⚡ AI SUGGESTIONS</h3>
-                    <div id="aiSuggestions" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px;">
-                        <div style="color: #888; font-size: 12px;">
-                            AI will suggest edits here...
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+const canvas = document.getElementById("wave");
+const selDiv = document.getElementById("selection");
+const cctx = canvas.getContext("2d");
 
-        <div class="status-bar" id="statusBar">
-            🎵 Ready for audio editing... Load a file to get started!
-        </div>
-    </div>
+function status(msg){ document.getElementById("status").textContent = msg; }
 
-    <script>
-        // ===== ADVANCED AUDIO EDITOR WITH SELECTIVE EDITING =====
-        let audioContext;
-        let originalAudioBuffer;
-        let editedAudioBuffer;
-        let currentAudioBuffer; // For playback
-        let audioWorklet;
-        
-        // Selection state
-        let selection = { start: 0, end: 0, active: false };
-        let isPlaying = false;
-        let playbackSource;
-        let editHistory = [];
-        
-        // Effect parameters
-        let effects = {
-            reverb: 0,
-            echo: 0,
-            pitch: 0,
-            vocalVolume: 100,
-            beatVolume: 100
-        };
+function openFile(){
+  document.getElementById("file").click();
+}
 
-        // ===== INITIALIZATION =====
-        async function initAudioSystem() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Create offline context for processing
-                audioWorklet = {
-                    sampleRate: audioContext.sampleRate,
-                    processAudio: function(buffer, operation, params) {
-                        return new Promise(resolve => {
-                            const offlineContext = new OfflineAudioContext(
-                                buffer.numberOfChannels,
-                                buffer.length,
-                                buffer.sampleRate
-                            );
-                            
-                            const source = offlineContext.createBufferSource();
-                            source.buffer = buffer;
-                            
-                            // Apply processing based on operation
-                            let processed = this.applyOperation(source, operation, params, offlineContext);
-                            
-                            source.connect(processed);
-                            processed.connect(offlineContext.destination);
-                            
-                            source.start();
-                            
-                            offlineContext.startRendering().then(renderedBuffer => {
-                                resolve(renderedBuffer);
-                            });
-                        });
-                    },
-                    
-                    applyOperation: function(source, operation, params, context) {
-                        switch(operation) {
-                            case 'removeVocals':
-                                return this.createVocalRemover(context);
-                            case 'isolateVocals':
-                                return this.createVocalIsolator(context);
-                            case 'reverb':
-                                return this.createReverb(context, params.amount);
-                            case 'echo':
-                                return this.createEcho(context, params.amount);
-                            case 'pitch':
-                                return this.createPitchShift(context, params.semitones);
-                            case 'volume':
-                                return this.createVolume(context, params.amount);
-                            default:
-                                return context.destination;
-                        }
-                    },
-                    
-                    createVocalRemover: function(context) {
-                        // Simple vocal removal by subtracting L-R channels
-                        const merger = context.createChannelMerger(2);
-                        const subtractor = context.createScriptProcessor(4096, 2, 2);
-                        
-                        subtractor.onaudioprocess = function(e) {
-                            const left = e.inputBuffer.getChannelData(0);
-                            const right = e.inputBuffer.getChannelData(1);
-                            const leftOut = e.outputBuffer.getChannelData(0);
-                            const rightOut = e.outputBuffer.getChannelData(1);
-                            
-                            for (let i = 0; i < left.length; i++) {
-                                const diff = (left[i] - right[i]) * 0.7;
-                                leftOut[i] = diff;
-                                rightOut[i] = diff;
-                            }
-                        };
-                        
-                        subtractor.connect(merger);
-                        return subtractor;
-                    },
-                    
-                    createVocalIsolator: function(context) {
-                        // Extract center channel (vocals are usually centered)
-                        const merger = context.createChannelMerger(2);
-                        const isolator = context.createScriptProcessor(4096, 2, 2);
-                        
-                        isolator.onaudioprocess = function(e) {
-                            const left = e.inputBuffer.getChannelData(0);
-                            const right = e.inputBuffer.getChannelData(1);
-                            const leftOut = e.outputBuffer.getChannelData(0);
-                            const rightOut = e.outputBuffer.getChannelData(1);
-                            
-                            for (let i = 0; i < left.length; i++) {
-                                const center = (left[i] + right[i]) * 0.5;
-                                leftOut[i] = center;
-                                rightOut[i] = center;
-                            }
-                        };
-                        
-                        isolator.connect(merger);
-                        return isolator;
-                    },
-                    
-                    createReverb: function(context, amount) {
-                        const convolver = context.createConvolver();
-                        const length = context.sampleRate * 2; // 2 seconds
-                        const impulse = context.createBuffer(2, length, context.sampleRate);
-                        
-                        for (let channel = 0; channel < 2; channel++) {
-                            const channelData = impulse.getChannelData(channel);
-                            for (let i = 0; i < length; i++) {
-                                const decay = Math.pow(1 - i / length, 2);
-                                channelData[i] = (Math.random() * 2 - 1) * decay * amount * 0.3;
-                            }
-                        }
-                        
-                        convolver.buffer = impulse;
-                        return convolver;
-                    },
-                    
-                    createEcho: function(context, amount) {
-                        const delay = context.createDelay(1.0);
-                        const feedback = context.createGain();
-                        const wet = context.createGain();
-                        
-                        delay.delayTime.value = 0.3; // 300ms delay
-                        feedback.gain.value = amount * 0.5;
-                        wet.gain.value = amount * 0.5;
-                        
-                        delay.connect(feedback);
-                        feedback.connect(delay);
-                        
-                        const input = context.createGain();
-                        const output = context.createGain();
-                        
-                        input.connect(delay);
-                        input.connect(output);
-                        delay.connect(wet);
-                        wet.connect(output);
-                        
-                        return input;
-                    },
-                    
-                    createPitchShift: function(context, semitones) {
-                        // Simple pitch shift using playback rate
-                        const pitchShifter = context.createScriptProcessor(4096, 1, 1);
-                        const rate = Math.pow(2, semitones / 12);
-                        
-                        pitchShifter.onaudioprocess = function(e) {
-                            const inputData = e.inputBuffer.getChannelData(0);
-                            const outputData = e.outputBuffer.getChannelData(0);
-                            
-                            // This is a simplified pitch shift - in reality you'd need granular synthesis
-                            for (let i = 0; i < outputData.length; i++) {
-                                const index = i * rate;
-                                const lower = Math.floor(index);
-                                const upper = Math.ceil(index);
-                                const fraction = index - lower;
-                                
-                                if (upper < inputData.length) {
-                                    outputData[i] = inputData[lower] * (1 - fraction) + inputData[upper] * fraction;
-                                } else {
-                                    outputData[i] = 0;
-                                }
-                            }
-                        };
-                        
-                        return pitchShifter;
-                    },
-                    
-                    createVolume: function(context, amount) {
-                        const gain = context.createGain();
-                        gain.gain.value = amount / 100;
-                        return gain;
-                    }
-                };
-                
-                console.log('✅ Advanced audio processing system initialized');
-            }
-        }
+document.getElementById("file").onchange = async e => {
+  ctx = new AudioContext();
+  const buf = await e.target.files[0].arrayBuffer();
+  originalBuffer = await ctx.decodeAudioData(buf);
+  editedBuffer = cloneBuffer(originalBuffer);
+  drawWave();
+  status("Audio loaded");
+};
 
-        // ===== FILE HANDLING =====
-        async function handleFileLoad(file) {
-            if (!file) return;
-            
-            try {
-                updateStatus('📁 Loading audio file...');
-                
-                const arrayBuffer = await file.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                
-                originalAudioBuffer = audioBuffer;
-                editedAudioBuffer = cloneAudioBuffer(audioBuffer);
-                
-                console.log('✅ Audio loaded:', audioBuffer.duration.toFixed(1) + 's');
-                displayWaveform(audioBuffer);
-                updateTimeline(audioBuffer.duration);
-                addToHistory('Original audio loaded');
-                updateAISuggestions();
-                
-                updateStatus('✅ Audio ready for editing!');
-                
-            } catch (error) {
-                console.error('❌ File load error:', error);
-                updateStatus('❌ Error loading audio file');
-            }
-        }
+function cloneBuffer(b){
+  const nb = ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
+  for(let c=0;c<b.numberOfChannels;c++)
+    nb.getChannelData(c).set(b.getChannelData(c));
+  return nb;
+}
 
-        function loadAudioFile() {
-            document.getElementById('audioFileInput').click();
-        }
+function drawWave(){
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 200;
+  const data = editedBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / canvas.width);
+  cctx.clearRect(0,0,canvas.width,canvas.height);
+  cctx.fillStyle="#4ecdc4";
+  for(let i=0;i<canvas.width;i++){
+    let min=1,max=-1;
+    for(let j=0;j<step;j++){
+      const d=data[i*step+j];
+      if(d<min)min=d;
+      if(d>max)max=d;
+    }
+    cctx.fillRect(i,(1+min)*100,1,Math.max(1,(max-min)*100));
+  }
+}
 
-        // ===== WAVEFORM DISPLAY =====
-        function displayWaveform(audioBuffer) {
-            const canvas = document.getElementById('waveformCanvas');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width = canvas.offsetWidth;
-            const height = canvas.height = 200;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            const data = audioBuffer.getChannelData(0);
-            const step = Math.ceil(data.length / width);
-            const amp = height / 2;
-            
-            // Draw waveform
-            ctx.fillStyle = '#4ecdc4';
-            for (let i = 0; i < width; i++) {
-                let min = 1.0, max = -1.0;
-                for (let j = 0; j < step; j++) {
-                    const datum = data[(i * step) + j];
-                    if (datum < min) min = datum;
-                    if (datum > max) max = datum;
-                }
-                ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
-            }
-            
-            // Add click handler for selection
-            canvas.onclick = handleWaveformClick;
-            canvas.onmousedown = handleSelectionStart;
-        }
+canvas.onmousedown = e=>{
+  const r=canvas.getBoundingClientRect();
+  selection.start=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
+  selection.active=true;
+};
+canvas.onmousemove = e=>{
+  if(!selection.active)return;
+  const r=canvas.getBoundingClientRect();
+  selection.end=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
+  updateSelection();
+};
+canvas.onmouseup=()=>selection.active=false;
 
-        function updateTimeline(duration) {
-            const ruler = document.getElementById('timelineRuler');
-            ruler.innerHTML = '';
-            
-            const markers = Math.min(10, Math.floor(duration));
-            for (let i = 0; i <= markers; i++) {
-                const marker = document.createElement('div');
-                marker.className = 'time-marker';
-                marker.style.left = (i / markers * 100) + '%';
-                marker.textContent = (i * duration / markers).toFixed(1) + 's';
-                ruler.appendChild(marker);
-            }
-        }
+function updateSelection(){
+  const d=editedBuffer.duration;
+  const s=Math.min(selection.start,selection.end);
+  const e=Math.max(selection.start,selection.end);
+  selDiv.style.display="block";
+  selDiv.style.left=(s/d*100)+"%";
+  selDiv.style.width=((e-s)/d*100)+"%";
+}
 
-        // ===== SELECTION HANDLING =====
-        function handleSelectionStart(e) {
-            const canvas = e.target;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const width = canvas.width;
-            const duration = originalAudioBuffer.duration;
-            
-            const clickTime = (x / width) * duration;
-            
-            selection.start = clickTime;
-            selection.active = true;
-            
-            // Update selection inputs
-            document.getElementById('selectionStart').value = clickTime.toFixed(1);
-            
-            // Visual feedback
-            canvas.onmousemove = handleSelectionMove;
-            canvas.onmouseup = handleSelectionEnd;
-        }
+function clearSelection(){
+  selDiv.style.display="none";
+  selection.start=selection.end=0;
+}
 
-        function handleSelectionMove(e) {
-            if (!selection.active) return;
-            
-            const canvas = e.target;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const width = canvas.width;
-            const duration = originalAudioBuffer.duration;
-            
-            const currentTime = (x / width) * duration;
-            selection.end = Math.max(currentTime, selection.start);
-            
-            // Update selection display
-            document.getElementById('selectionEnd').value = selection.end.toFixed(1);
-            updateSelectionDisplay();
-        }
+function selectAll(){
+  selection.start=0;
+  selection.end=editedBuffer.duration;
+  updateSelection();
+}
 
-        function handleSelectionEnd(e) {
-            selection.active = false;
-            e.target.onmousemove = null;
-            e.target.onmouseup = null;
-            console.log('Selection:', selection.start.toFixed(2) + 's', 'to', selection.end.toFixed(2) + 's');
-        }
+async function applyEffects(){
+  if(selection.start===selection.end)return alert("Select audio");
+  undoStack.push(cloneBuffer(editedBuffer));
 
-        function handleWaveformClick(e) {
-            if (selection.active) return;
-            
-            const canvas = e.target;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const width = canvas.width;
-            const duration = originalAudioBuffer.duration;
-            
-            const clickTime = (x / width) * duration;
-            
-            // Set playhead position
-            document.getElementById('playhead').style.left = (x / width * 100) + '%';
-            document.getElementById('playhead').style.display = 'block';
-        }
+  const sb=extract(selection.start,selection.end);
+  const processed=await process(sb);
+  editedBuffer=replace(processed,selection.start,selection.end);
+  drawWave();
+}
 
-        function updateSelectionDisplay() {
-            const region = document.getElementById('selectionRegion');
-            const canvas = document.getElementById('waveformCanvas');
-            const width = canvas.width;
-            const duration = originalAudioBuffer.duration;
-            
-            if (selection.start !== selection.end) {
-                const startPercent = (selection.start / duration) * 100;
-                const widthPercent = ((selection.end - selection.start) / duration) * 100;
-                
-                region.style.left = startPercent + '%';
-                region.style.width = widthPercent + '%';
-                region.style.display = 'block';
-            } else {
-                region.style.display = 'none';
-            }
-        }
+function extract(s,e){
+  const sr=editedBuffer.sampleRate;
+  const ss=Math.floor(s*sr), es=Math.floor(e*sr);
+  const nb=ctx.createBuffer(editedBuffer.numberOfChannels,es-ss,sr);
+  for(let c=0;c<nb.numberOfChannels;c++)
+    nb.getChannelData(c).set(editedBuffer.getChannelData(c).slice(ss,es));
+  return nb;
+}
 
-        function selectAll() {
-            if (!originalAudioBuffer) return;
-            
-            selection.start = 0;
-            selection.end = originalAudioBuffer.duration;
-            
-            document.getElementById('selectionStart').value = '0';
-            document.getElementById('selectionEnd').value = selection.end.toFixed(1);
-            
-            updateSelectionDisplay();
-            updateStatus('📋 Selected entire audio');
-        }
+function replace(pb,s,e){
+  const sr=editedBuffer.sampleRate;
+  const ss=Math.floor(s*sr);
+  const nb=cloneBuffer(editedBuffer);
+  for(let c=0;c<nb.numberOfChannels;c++)
+    nb.getChannelData(c).set(pb.getChannelData(c),ss);
+  return nb;
+}
 
-        function clearSelection() {
-            selection.start = 0;
-            selection.end = 0;
-            
-            document.getElementById('selectionStart').value = '0';
-            document.getElementById('selectionEnd').value = '0';
-            
-            updateSelectionDisplay();
-            updateStatus('❌ Selection cleared');
-        }
+async function process(buf){
+  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
+  const src=off.createBufferSource();
+  src.buffer=buf;
 
-        // ===== EDITING FUNCTIONS =====
-        async function removeVocals() {
-            if (!originalAudioBuffer) {
-                alert('Please load audio first!');
-                return;
-            }
-            
-            updateStatus('🗣️ Removing vocals from selection...');
-            
-            try {
-                const processedBuffer = await processSelection('removeVocals', {});
-                
-                // Create new buffer with processed selection
-                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
-                editedAudioBuffer = resultBuffer;
-                
-                displayWaveform(editedAudioBuffer);
-                addToHistory('Vocals removed from ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
-                updateStatus('✅ Vocals removed from selection!');
-                
-            } catch (error) {
-                console.error('❌ Vocal removal error:', error);
-                updateStatus('❌ Error removing vocals');
-            }
-        }
+  let node=src;
+  const p=document.getElementById("pitch").value;
+  src.playbackRate.value=Math.pow(2,p/12);
 
-        async function isolateVocals() {
-            if (!originalAudioBuffer) {
-                alert('Please load audio first!');
-                return;
-            }
-            
-            updateStatus('🎯 Isolating vocals from selection...');
-            
-            try {
-                const processedBuffer = await processSelection('isolateVocals', {});
-                
-                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
-                editedAudioBuffer = resultBuffer;
-                
-                displayWaveform(editedAudioBuffer);
-                addToHistory('Vocals isolated from ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
-                updateStatus('✅ Vocals isolated from selection!');
-                
-            } catch (error) {
-                console.error('❌ Vocal isolation error:', error);
-                updateStatus('❌ Error isolating vocals');
-            }
-        }
+  const rv=document.getElementById("reverb").value;
+  if(rv>0){
+    const con=off.createConvolver();
+    con.buffer=impulse(off,rv/100);
+    node.connect(con);
+    node=con;
+  }
 
-        async function applySelectedEffects() {
-            if (!originalAudioBuffer) {
-                alert('Please load audio first!');
-                return;
-            }
-            
-            if (selection.start === selection.end) {
-                alert('Please select a region first!');
-                return;
-            }
-            
-            updateStatus('✨ Applying effects to selection...');
-            
-            try {
-                // Get effect parameters
-                const reverbAmount = document.getElementById('reverbAmount').value / 100;
-                const echoAmount = document.getElementById('echoAmount').value / 100;
-                const pitchShift = document.getElementById('pitchShift').value;
-                
-                // Process each effect
-                let processedBuffer = editedAudioBuffer;
-                
-                if (reverbAmount > 0) {
-                    processedBuffer = await processSelection('reverb', { amount: reverbAmount });
-                }
-                
-                if (echoAmount > 0) {
-                    processedBuffer = await processSelection('echo', { amount: echoAmount });
-                }
-                
-                if (pitchShift !== 0) {
-                    processedBuffer = await processSelection('pitch', { semitones: pitchShift });
-                }
-                
-                // Replace selection
-                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
-                editedAudioBuffer = resultBuffer;
-                
-                displayWaveform(editedAudioBuffer);
-                addToHistory('Effects applied to ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
-                updateStatus('✅ Effects applied to selection!');
-                
-            } catch (error) {
-                console.error('❌ Effects application error:', error);
-                updateStatus('❌ Error applying effects');
-            }
-        }
+  const ec=document.getElementById("echo").value;
+  if(ec>0){
+    const d=off.createDelay();
+    d.delayTime.value=0.25;
+    const g=off.createGain();
+    g.gain.value=ec/100;
+    d.connect(g); g.connect(d);
+    node.connect(d);
+    node=d;
+  }
 
-        // ===== PROCESSING FUNCTIONS =====
-        async function processSelection(operation, params) {
-            if (!originalAudioBuffer) return null;
-            
-            // Extract selection
-            const selectionBuffer = extractSelection(editedAudioBuffer, selection.start, selection.end);
-            
-            // Process with Web Audio API
-            const processedBuffer = await audioWorklet.processAudio(selectionBuffer, operation, params);
-            
-            return processedBuffer;
-        }
+  node.connect(off.destination);
+  src.start();
+  return await off.startRendering();
+}
 
-        function extractSelection(audioBuffer, startTime, endTime) {
-            const startSample = Math.floor(startTime * audioBuffer.sampleRate);
-            const endSample = Math.floor(endTime * audioBuffer.sampleRate);
-            const selectionLength = endSample - startSample;
-            
-            const newBuffer = audioContext.createBuffer(
-                audioBuffer.numberOfChannels,
-                selectionLength,
-                audioBuffer.sampleRate
-            );
-            
-            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-                const oldData = audioBuffer.getChannelData(channel);
-                const newData = newBuffer.getChannelData(channel);
-                
-                for (let i = 0; i < selectionLength; i++) {
-                    newData[i] = oldData[startSample + i];
-                }
-            }
-            
-            return newBuffer;
-        }
+function impulse(ctx,a){
+  const l=ctx.sampleRate*2;
+  const b=ctx.createBuffer(2,l,ctx.sampleRate);
+  for(let c=0;c<2;c++){
+    const d=b.getChannelData(c);
+    for(let i=0;i<l;i++) d[i]=(Math.random()*2-1)*(1-i/l)*a;
+  }
+  return b;
+}
 
-        function replaceSelection(originalBuffer, processedSelection, startTime, endTime) {
-            const startSample = Math.floor(startTime * originalBuffer.sampleRate);
-            const endSample = Math.floor(endTime * originalBuffer.sampleRate);
-            const selectionLength = endSample - startSample;
-            
-            const newBuffer = cloneAudioBuffer(originalBuffer);
-            
-            for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-                const originalData = originalBuffer.getChannelData(channel);
-                const newData = newBuffer.getChannelData(channel);
-                const processedData = processedSelection.getChannelData(channel);
-                
-                // Replace selection with processed audio
-                for (let i = 0; i < Math.min(selectionLength, processedData.length); i++) {
-                    newData[startSample + i] = processedData[i];
-                }
-            }
-            
-            return newBuffer;
-        }
+function playAll(){
+  stop();
+  source=ctx.createBufferSource();
+  source.buffer=editedBuffer;
+  source.connect(ctx.destination);
+  source.start();
+}
 
-        function cloneAudioBuffer(audioBuffer) {
-            const newBuffer = audioContext.createBuffer(
-                audioBuffer.numberOfChannels,
-                audioBuffer.length,
-                audioBuffer.sampleRate
-            );
-            
-            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-                const oldData = audioBuffer.getChannelData(channel);
-                const newData = newBuffer.getChannelData(channel);
-                newData.set(oldData);
-            }
-            
-            return newBuffer;
-        }
+function playSelection(){
+  stop();
+  const b=extract(selection.start,selection.end);
+  source=ctx.createBufferSource();
+  source.buffer=b;
+  source.connect(ctx.destination);
+  source.start();
+}
 
-        // ===== PLAYBACK FUNCTIONS =====
-        function playSelected() {
-            if (!editedAudioBuffer || selection.start === selection.end) {
-                alert('Please select a region to play!');
-                return;
-            }
-            
-            stopPlayback();
-            
-            const selectionBuffer = extractSelection(editedAudioBuffer, selection.start, selection.end);
-            currentAudioBuffer = selectionBuffer;
-            
-            const source = audioContext.createBufferSource();
-            source.buffer = currentAudioBuffer;
-            source.connect(audioContext.destination);
-            source.start();
-            
-            playbackSource = source;
-            isPlaying = true;
-            
-            source.onended = () => {
-                isPlaying = false;
-                updateStatus('⏹️ Playback finished');
-            };
-            
-            updateStatus('▶️ Playing selection...');
-        }
+function stop(){
+  if(source) source.stop();
+}
 
-        function playAll() {
-            if (!editedAudioBuffer) {
-                alert('No audio loaded!');
-                return;
-            }
-            
-            stopPlayback();
-            
-            currentAudioBuffer = editedAudioBuffer;
-            
-            const source = audioContext.createBufferSource();
-            source.buffer = currentAudioBuffer;
-            source.connect(audioContext.destination);
-            source.start();
-            
-            playbackSource = source;
-            isPlaying = true;
-            
-            source.onended = () => {
-                isPlaying = false;
-                updateStatus('⏹️ Playback finished');
-            };
-            
-            updateStatus('▶️ Playing entire audio...');
-        }
+function deleteSelection(){
+  undoStack.push(cloneBuffer(editedBuffer));
+  editedBuffer=replace(ctx.createBuffer(editedBuffer.numberOfChannels,0,editedBuffer.sampleRate),selection.start,selection.end);
+  drawWave();
+}
 
-        function stopPlayback() {
-            if (playbackSource) {
-                playbackSource.stop();
-                playbackSource = null;
-                isPlaying = false;
-            }
-            updateStatus('⏹️ Playback stopped');
-        }
+function fadeIn(){
+  undoStack.push(cloneBuffer(editedBuffer));
+  const b=extract(selection.start,selection.end);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]*=i/d.length;
+  editedBuffer=replace(b,selection.start,selection.end);
+  drawWave();
+}
 
-        // ===== BEFORE/AFTER COMPARISON =====
-        function playBefore() {
-            if (!originalAudioBuffer) {
-                alert('No original audio loaded!');
-                return;
-            }
-            
-            stopPlayback();
-            currentAudioBuffer = originalAudioBuffer;
-            
-            const source = audioContext.createBufferSource();
-            source.buffer = currentAudioBuffer;
-            source.connect(audioContext.destination);
-            source.start();
-            
-            playbackSource = source;
-            
-            // Update UI
-            document.getElementById('beforeBtn').classList.add('active');
-            document.getElementById('afterBtn').classList.remove('active');
-            
-            updateComparisonInfo('Playing: Original (Before edits)');
-        }
+function fadeOut(){
+  undoStack.push(cloneBuffer(editedBuffer));
+  const b=extract(selection.start,selection.end);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]*=(1-i/d.length);
+  editedBuffer=replace(b,selection.start,selection.end);
+  drawWave();
+}
 
-        function playAfter() {
-            if (!editedAudioBuffer) {
-                alert('No edited version available!');
-                return;
-            }
-            
-            stopPlayback();
-            currentAudioBuffer = editedAudioBuffer;
-            
-            const source = audioContext.createBufferSource();
-            source.buffer = currentAudioBuffer;
-            source.connect(audioContext.destination);
-            source.start();
-            
-            playbackSource = source;
-            
-            // Update UI
-            document.getElementById('afterBtn').classList.add('active');
-            document.getElementById('beforeBtn').classList.remove('active');
-            
-            updateComparisonInfo('Playing: Edited (After edits)');
-        }
+function undo(){
+  if(!undoStack.length)return;
+  editedBuffer=undoStack.pop();
+  drawWave();
+}
 
-        function updateComparisonInfo(text) {
-            document.getElementById('comparisonInfo').textContent = text;
-        }
+function exportWav(){
+  const blob=bufferToWav(editedBuffer);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="edited.wav";
+  a.click();
+}
 
-        // ===== EDIT HISTORY =====
-        function addToHistory(action) {
-            const timestamp = new Date().toLocaleTimeString();
-            editHistory.push({ action, timestamp });
-            
-            const historyDiv = document.getElementById('editHistory');
-            const entry = document.createElement('div');
-            entry.style.cssText = 'background: rgba(78, 205, 196, 0.1); padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 12px;';
-            entry.innerHTML = `
-                <div style="color: #4ecdc4; font-weight: bold;">${action}</div>
-                <div style="color: #888; font-size: 10px;">${timestamp}</div>
-            `;
-            
-            historyDiv.insertBefore(entry, historyDiv.firstChild);
-            
-            // Keep only last 10 entries
-            while (historyDiv.children.length > 10) {
-                historyDiv.removeChild(historyDiv.lastChild);
-            }
-        }
-
-        function undoLastEdit() {
-            if (editHistory.length === 0) {
-                alert('No edits to undo!');
-                return;
-            }
-            
-            // For now, just restore to original
-            editedAudioBuffer = cloneAudioBuffer(originalAudioBuffer);
-            displayWaveform(editedAudioBuffer);
-            
-            const lastEdit = editHistory.pop();
-            updateStatus(`↶ Undone: ${lastEdit.action}`);
-            
-            // Clear history display
-            const historyDiv = document.getElementById('editHistory');
-            if (historyDiv.firstChild) {
-                historyDiv.removeChild(historyDiv.firstChild);
-            }
-        }
-
-        function clearHistory() {
-            editHistory = [];
-            document.getElementById('editHistory').innerHTML = '<div style="color: #888; font-size: 12px; text-align: center;">No edits yet...</div>';
-            updateStatus('🗑️ Edit history cleared');
-        }
-
-        // ===== AI SUGGESTIONS =====
-        function updateAISuggestions() {
-            if (!originalAudioBuffer) return;
-            
-            const duration = originalAudioBuffer.duration;
-            const suggestions = [];
-            
-            // Simple analysis-based suggestions
-            if (duration > 30) {
-                suggestions.push('Consider adding fade-in/out for smooth transitions');
-            }
-            
-            if (duration > 60) {
-                suggestions.push('Long audio - try isolating vocals for cleaner sound');
-            }
-            
-            suggestions.push('Try reverb on vocals for professional sound');
-            suggestions.push('Use echo sparingly on specific phrases');
-            suggestions.push('Pitch shift can create interesting harmonies');
-            
-            const suggestionsDiv = document.getElementById('aiSuggestions');
-            suggestionsDiv.innerHTML = suggestions.map(suggestion => 
-                `<div style="background: rgba(78, 205, 196, 0.1); padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 12px; border-left: 3px solid #4ecdc4;">💡 ${suggestion}</div>`
-            ).join('');
-        }
-
-        // ===== UTILITY FUNCTIONS =====
-        function updateStatus(message) {
-            document.getElementById('statusBar').textContent = message;
-            console.log('Status:', message);
-        }
-
-        // ===== EFFECT SLIDERS =====
-        function setupEffectSliders() {
-            const sliders = [
-                { id: 'reverbAmount', valueId: 'reverbValue', suffix: '%' },
-                { id: 'echoAmount', valueId: 'echoValue', suffix: '%' },
-                { id: 'pitchShift', valueId: 'pitchValue', suffix: ' semitones' },
-                { id: 'vocalVolume', valueId: 'vocalVolumeValue', suffix: '%' },
-                { id: 'beatVolume', valueId: 'beatVolumeValue', suffix: '%' }
-            ];
-            
-            sliders.forEach(slider => {
-                const element = document.getElementById(slider.id);
-                const valueElement = document.getElementById(slider.valueId);
-                
-                element.addEventListener('input', function() {
-                    const value = this.value;
-                    valueElement.textContent = value + slider.suffix;
-                    
-                    // Store effect value
-                    const effectName = slider.id.replace('Amount', '').replace('Shift', '');
-                    effects[effectName] = parseFloat(value);
-                });
-            });
-        }
-
-        // ===== EXPORT FUNCTION =====
-        function exportEditedAudio() {
-            if (!editedAudioBuffer) {
-                alert('No edited audio to export!');
-                return;
-            }
-            
-            updateStatus('💾 Preparing export...');
-            
-            // Convert to WAV
-            const wavBlob = audioBufferToWav(editedAudioBuffer);
-            const url = URL.createObjectURL(wavBlob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'edited_audio.wav';
-            a.click();
-            
-            URL.revokeObjectURL(url);
-            updateStatus('✅ Export complete!');
-        }
-
-        // ===== INITIALIZATION =====
-        window.addEventListener('load', async function() {
-            console.log('🎵 AI Audio Editor Pro - Advanced Selective Editing');
-            await initAudioSystem();
-            setupEffectSliders();
-            updateStatus('🎵 Advanced audio editor ready! Load a file to start editing...');
-        });
-    </script>
+function bufferToWav(b){
+  const ch=b.numberOfChannels;
+  const len=b.length*ch*2+44;
+  const buf=new ArrayBuffer(len);
+  const v=new DataView(buf);
+  let p=0;
+  const w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(i));};
+  w("RIFF");v.setUint32(p,36+b.length*2,true);p+=4;
+  w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
+  v.setUint16(p,1,true);p+=2;
+  v.setUint16(p,ch,true);p+=2;
+  v.setUint32(p,b.sampleRate,true);p+=4;
+  v.setUint32(p,b.sampleRate*ch*2,true);p+=4;
+  v.setUint16(p,ch*2,true);p+=2;
+  v.setUint16(p,16,true);p+=2;
+  w("data");v.setUint32(p,b.length*2,true);p+=4;
+  for(let i=0;i<b.length;i++)
+    for(let c=0;c<ch;c++){
+      v.setInt16(p,Math.max(-1,Math.min(1,b.getChannelData(c)[i]))*0x7fff,true);
+      p+=2;
+    }
+  return new Blob([buf],{type:"audio/wav"});
+}
+</script>
 </body>
 </html>
