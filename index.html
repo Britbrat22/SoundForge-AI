@@ -1,439 +1,308 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>AI Audio Editor Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-/* === SAME UI — UNCHANGED === */
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;height:100vh;overflow:hidden}
-.daw-container{display:flex;flex-direction:column;height:100vh}
-.header{background:linear-gradient(135deg,#1a1a1a,#252525);padding:15px;display:flex;justify-content:space-between}
-.main-content{flex:1;display:flex;overflow:hidden}
-.edit-panel,.compare-panel{background:#1a1a1a;padding:20px;overflow-y:auto}
-.edit-panel{width:350px;border-right:1px solid #333}
-.compare-panel{width:300px;border-left:1px solid #333}
-.editor-panel{flex:1;background:#0f0f0f;padding:20px}
-.edit-section{margin-bottom:20px;background:rgba(0,0,0,.3);padding:15px;border-radius:8px}
-.edit-section h3{color:#4ecdc4;margin-bottom:10px}
-.btn{width:100%;margin:5px 0;padding:10px;border:none;border-radius:6px;
-background:linear-gradient(135deg,#4ecdc4,#45b7d1);color:#fff;font-weight:bold;cursor:pointer}
-.btn-danger{background:linear-gradient(135deg,#ff6b6b,#ff8555)}
-.waveform-editor{background:#000;border:2px solid #333;border-radius:8px}
-.waveform-display{height:200px;position:relative}
-.selection-region{position:absolute;background:rgba(78,205,196,.3);border:2px solid #4ecdc4;display:none}
-.playhead{position:absolute;width:2px;background:#ff6b6b;height:100%;display:none}
-.status-bar{background:#1a1a1a;padding:10px;text-align:center;color:#ccc}
-canvas{width:100%;height:100%}
-
-/* ========= NEW FEATURES ========= */
-/* 1. light theme */
-body.light{background:#f5f5f5;color:#222}
-body.light .edit-panel,body.light .compare-panel{background:#fafafa;border-color:#ddd}
-body.light .waveform-editor{background:#fff;border-color:#ccc}
-body.light .btn{background:linear-gradient(135deg,#2196F3,#21CBF3)}
-
-/* 2. level meter */
-#levelMeter{background:#000;border-radius:4px}
-
-/* 3. tiny active-gain animation */
-.btn:active{transform:scale(.96);transition:none}
-
-/* 4. scrollbar polish */
-::-webkit-scrollbar{width:8px}
-::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
-::-webkit-scrollbar-thumb{background:#4ecdc4;border-radius:4px}
-
-</style>
-</head>
-
-<body>
-<div class="daw-container">
-
-<header class="header">
-<div>🎵 AI Audio Editor Pro</div>
-<div>
-<button class="btn" id="themeBtn" title="Toggle dark/light">🌙</button>
-<button class="btn" onclick="loadFile()">📁 Load</button>
-<button class="btn" onclick="exportWav()">💾 Export WAV</button>
-<button class="btn" onclick="exportMp3()">💾 Export MP3</button>
-<input id="file" type="file" accept="audio/*" hidden>
-</div>
-</header>
-
-<div class="main-content">
-
-<!-- LEFT -->
-<div class="edit-panel">
-
-<!-- NEW: level meter -->
-<div class="edit-section">
-<h3>📊 INPUT LEVEL</h3>
-<canvas id="levelMeter" width="280" height="40"></canvas>
-</div>
-
-<div class="edit-section">
-<h3>🎯 Selection</h3>
-<button class="btn" onclick="selectAll()">Select All</button>
-<button class="btn" onclick="clearSelection()">Clear</button>
-</div>
-
-<div class="edit-section">
-<h3>🎤 Vocals</h3>
-<button class="btn" onclick="removeVocals()">Remove Vocals</button>
-<button class="btn" onclick="isolateVocals()">Isolate Vocals</button>
-</div>
-
-<div class="edit-section">
-<h3>🎛 Effects</h3>
-<label>Reverb</label><input type="range" id="reverb" min="0" max="1" step="0.01">
-<label>Echo</label><input type="range" id="echo" min="0" max="1" step="0.01">
-<label>Pitch</label><input type="range" id="pitch" min="-12" max="12">
-<button class="btn" onclick="applyEffects()">Apply Effects</button>
-</div>
-
-<div class="edit-section">
-<h3>🔧 Utility</h3>
-<button class="btn btn-danger" onclick="deleteSelection()">Delete</button>
-<button class="btn" onclick="fadeIn()">Fade In</button>
-<button class="btn" onclick="fadeOut()">Fade Out</button>
-<button class="btn" onclick="undo()">Undo</button>
-</div>
-</div>
-
-<!-- CENTER -->
-<div class="editor-panel">
-<div class="waveform-editor">
-<div class="waveform-display" id="wave">
-<div class="selection-region" id="sel"></div>
-<div class="playhead" id="ph"></div>
-<canvas id="cv"></canvas>
-</div>
-</div>
-<div style="margin-top:15px;text-align:center">
-<button class="btn" onclick="play()">▶ Play</button>
-<button class="btn" onclick="stop()">⏹ Stop</button>
-</div>
-</div>
-
-<!-- RIGHT -->
-<div class="compare-panel">
-<div class="edit-section">
-<h3>🔄 Compare</h3>
-<button class="btn" onclick="playOriginal()">Before</button>
-<button class="btn" onclick="playEdited()">After</button>
-</div>
-</div>
-
-</div>
-
-<div class="status-bar" id="status">Ready</div>
-</div>
-
 <script>
-/* ========= CORE ENGINE (UNCHANGED) ========= */
+/* ===============================
+   CORE AUDIO ENGINE (FIXED)
+================================ */
 
-let ctx,newBuf,origBuf,source,undoStack=[];
-let sel={start:0,end:0};
+let audioContext;
+let originalAudioBuffer;
+let editedAudioBuffer;
+let playbackSource = null;
 
-const cv=document.getElementById("cv");
-const wave=document.getElementById("wave");
-const selBox=document.getElementById("sel");
-const ph=document.getElementById("ph");
+let selection = { start: 0, end: 0 };
+let undoStack = [];
+const UNDO_LIMIT = 20;
 
-const status=t=>document.getElementById("status").textContent=t;
+/* ===============================
+   INIT
+================================ */
 
-file.onchange=e=>loadAudio(e.target.files[0]);
-
-function loadFile(){file.click()}
-
-async function loadAudio(file){
-ctx=new AudioContext();
-const ab=await file.arrayBuffer();
-origBuf=await ctx.decodeAudioData(ab);
-newBuf=clone(origBuf);
-draw();
-status("Loaded");
-startMeter();
+async function initAudioSystem() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
 }
 
-function clone(b){
-const n=ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
-for(let c=0;c<b.numberOfChannels;c++)n.getChannelData(c).set(b.getChannelData(c));
-return n;
+/* ===============================
+   UNDO SYSTEM
+================================ */
+
+function pushUndo() {
+  undoStack.push(cloneBuffer(editedAudioBuffer));
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
 }
 
-/* ========= DRAW ========= */
-function draw(){
-cv.width=cv.offsetWidth;
-cv.height=200;
-const g=cv.getContext("2d");
-g.clearRect(0,0,cv.width,cv.height);
-const d=newBuf.getChannelData(0);
-const step=Math.ceil(d.length/cv.width);
-for(let i=0;i<cv.width;i++){
-let min=1,max=-1;
-for(let j=0;j<step;j++){
-const v=d[i*step+j]||0;
-min=Math.min(min,v);max=Math.max(max,v);
-}
-g.fillStyle="#4ecdc4";
-g.fillRect(i,(1+min)*100,1,Math.max(1,(max-min)*100));
-}
+function undoLastEdit() {
+  if (!undoStack.length) return alert("Nothing to undo");
+  editedAudioBuffer = undoStack.pop();
+  displayWaveform(editedAudioBuffer);
 }
 
-/* ========= SELECTION ========= */
-wave.onmousedown=e=>{
-const r=wave.getBoundingClientRect();
-sel.start=(e.clientX-r.left)/r.width*newBuf.duration;
-wave.onmousemove=ev=>{
-sel.end=(ev.clientX-r.left)/r.width*newBuf.duration;
-updateSel();
-};
-wave.onmouseup=()=>wave.onmousemove=null;
-};
+/* ===============================
+   BUFFER HELPERS
+================================ */
 
-function updateSel(){
-const s=Math.min(sel.start,sel.end);
-const e=Math.max(sel.start,sel.end);
-selBox.style.display="block";
-selBox.style.left=(s/newBuf.duration*100)+"%";
-selBox.style.width=((e-s)/newBuf.duration*100)+"%";
+function cloneBuffer(buffer) {
+  const b = audioContext.createBuffer(
+    buffer.numberOfChannels,
+    buffer.length,
+    buffer.sampleRate
+  );
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    b.getChannelData(c).set(buffer.getChannelData(c));
+  }
+  return b;
 }
 
-function clearSelection(){sel={start:0,end:0};selBox.style.display="none"}
+function extractSelection(buffer, start, end) {
+  const sr = buffer.sampleRate;
+  const s = Math.floor(start * sr);
+  const e = Math.floor(end * sr);
+  const len = Math.max(0, e - s);
 
-function selectAll(){sel.start=0;sel.end=newBuf.duration;updateSel()}
+  const out = audioContext.createBuffer(
+    buffer.numberOfChannels,
+    len,
+    sr
+  );
 
-/* ========= AUDIO OPS ========= */
-function play(){
-stop();
-source=ctx.createBufferSource();
-source.buffer=newBuf;
-source.connect(ctx.destination);
-source.start();
-animatePlayhead();
-}
-
-function stop(){if(source){source.stop();source=null}}
-
-function playOriginal(){stop();source=ctx.createBufferSource();source.buffer=origBuf;source.connect(ctx.destination);source.start();animatePlayhead()}
-function playEdited(){play()}
-
-/* ========= PROCESS ========= */
-function getSelection(){
-const s=Math.floor(Math.min(sel.start,sel.end)*newBuf.sampleRate);
-const e=Math.floor(Math.max(sel.start,sel.end)*newBuf.sampleRate);
-return {s,e};
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    out.getChannelData(c).set(
+      buffer.getChannelData(c).slice(s, e)
+    );
+  }
+  return out;
 }
 
-async function process(fn){
-undoStack.push(clone(newBuf)); if(undoStack.length>20)undoStack.shift();
-const {s,e}=getSelection();
-const off=new OfflineAudioContext(newBuf.numberOfChannels,newBuf.length,newBuf.sampleRate);
-const src=off.createBufferSource(); src.buffer=newBuf;
-const node=fn(off,src);
-node.connect(off.destination); src.start();
-newBuf=await off.startRendering();
-draw();
+/* REAL replace (rebuilds buffer correctly) */
+function replaceSelection(buffer, insert, start, end) {
+  const sr = buffer.sampleRate;
+  const s = Math.floor(start * sr);
+  const e = Math.floor(end * sr);
+
+  const newLen = buffer.length - (e - s) + insert.length;
+  const out = audioContext.createBuffer(
+    buffer.numberOfChannels,
+    newLen,
+    sr
+  );
+
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const o = out.getChannelData(c);
+    const b = buffer.getChannelData(c);
+    const i = insert.getChannelData(c);
+
+    o.set(b.slice(0, s), 0);
+    o.set(i, s);
+    o.set(b.slice(e), s + i.length);
+  }
+  return out;
 }
 
-function applyEffects(){
-process((o,s)=>{
-let n=s;
-const r=document.getElementById("reverb").value;
-const e=document.getElementById("echo").value;
-const p=document.getElementById("pitch").value;
-if(p!=0)s.playbackRate.value=Math.pow(2,p/12);
-if(r>0){
-const c=o.createConvolver();
-c.buffer=impulse(o,r);
-n.connect(c); n=c;
-}
-if(e>0){
-const d=o.createDelay();d.delayTime.value=.3;
-const g=o.createGain();g.gain.value=e*.5;
-d.connect(g);g.connect(d);
-n.connect(d); n=d;
-}
-return n;
-});
+/* ===============================
+   OFFLINE EFFECT PIPELINE
+================================ */
+
+async function processOffline(buffer, buildGraph) {
+  const ctx = new OfflineAudioContext(
+    buffer.numberOfChannels,
+    buffer.length,
+    buffer.sampleRate
+  );
+
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+
+  const last = buildGraph(ctx, src);
+  last.connect(ctx.destination);
+  src.start();
+
+  return await ctx.startRendering();
 }
 
-function impulse(o,a){
-const b=o.createBuffer(2,o.sampleRate*2,o.sampleRate);
-for(let c=0;c<2;c++){
-const d=b.getChannelData(c);
-for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)*a;
-}
-return b;
+/* ===============================
+   EFFECT CHAIN
+================================ */
+
+async function applyEffectsChain(buffer, fx) {
+  return processOffline(buffer, (ctx, src) => {
+    let node = src;
+
+    if (fx.pitch !== 0) {
+      src.playbackRate.value = Math.pow(2, fx.pitch / 12);
+    }
+
+    if (fx.reverb > 0) {
+      const convolver = ctx.createConvolver();
+      convolver.buffer = makeImpulse(ctx, fx.reverb);
+      node.connect(convolver);
+      node = convolver;
+    }
+
+    if (fx.echo > 0) {
+      const delay = ctx.createDelay();
+      delay.delayTime.value = 0.25;
+      const fb = ctx.createGain();
+      fb.gain.value = fx.echo * 0.4;
+      delay.connect(fb);
+      fb.connect(delay);
+      node.connect(delay);
+      node = delay;
+    }
+
+    return node;
+  });
 }
 
-function fadeIn(){fade(true)}
-function fadeOut(){fade(false)}
-
-function fade(inward){
-process((o,s)=>{
-const g=o.createGain();
-g.gain.setValueAtTime(inward?0:1,0);
-g.gain.linearRampToValueAtTime(inward?1:0,newBuf.duration);
-s.connect(g);return g;
-});
+function makeImpulse(ctx, amt) {
+  const len = ctx.sampleRate * 2;
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2) * amt;
+    }
+  }
+  return buf;
 }
 
-function deleteSelection(){
-process(()=>ctx.destination);
-const {s,e}=getSelection();
-const len=newBuf.length-(e-s);
-const b=ctx.createBuffer(newBuf.numberOfChannels,len,newBuf.sampleRate);
-for(let c=0;c<b.numberOfChannels;c++){
-const d=b.getChannelData(c);
-d.set(newBuf.getChannelData(c).slice(0,s),0);
-d.set(newBuf.getChannelData(c).slice(e),s);
-}
-newBuf=b;draw();
+/* ===============================
+   EFFECT BUTTON
+================================ */
+
+async function applySelectedEffects() {
+  if (selection.start === selection.end) return alert("Select audio first");
+
+  pushUndo();
+
+  const sel = extractSelection(
+    editedAudioBuffer,
+    selection.start,
+    selection.end
+  );
+
+  const processed = await applyEffectsChain(sel, {
+    reverb: document.getElementById("reverbAmount").value / 100,
+    echo: document.getElementById("echoAmount").value / 100,
+    pitch: parseFloat(document.getElementById("pitchShift").value)
+  });
+
+  editedAudioBuffer = replaceSelection(
+    editedAudioBuffer,
+    processed,
+    selection.start,
+    selection.end
+  );
+
+  displayWaveform(editedAudioBuffer);
 }
 
-function removeVocals(){
-process((o,s)=>{
-if(newBuf.numberOfChannels<2)return s;
-const g=o.createGain();
-g.gain.value=0;
-s.connect(g);return g;
-});
+/* ===============================
+   DELETE / FADE
+================================ */
+
+function deleteSelection() {
+  if (selection.start === selection.end) return;
+  pushUndo();
+
+  editedAudioBuffer = replaceSelection(
+    editedAudioBuffer,
+    audioContext.createBuffer(
+      editedAudioBuffer.numberOfChannels,
+      0,
+      editedAudioBuffer.sampleRate
+    ),
+    selection.start,
+    selection.end
+  );
+  displayWaveform(editedAudioBuffer);
 }
 
-function isolateVocals(){
-process((o,s)=>{
-const g=o.createGain();g.gain.value=1;return g;
-});
+function fade(type) {
+  pushUndo();
+  const sr = editedAudioBuffer.sampleRate;
+  const s = Math.floor(selection.start * sr);
+  const e = Math.floor(selection.end * sr);
+  const len = e - s;
+
+  for (let c = 0; c < editedAudioBuffer.numberOfChannels; c++) {
+    const d = editedAudioBuffer.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      const g = type === "in" ? i / len : 1 - i / len;
+      d[s + i] *= g;
+    }
+  }
+  displayWaveform(editedAudioBuffer);
 }
 
-function undo(){
-if(!undoStack.length)return;
-newBuf=undoStack.pop();
-draw();
+function fadeInSelection() { fade("in"); }
+function fadeOutSelection() { fade("out"); }
+
+/* ===============================
+   PLAYBACK
+================================ */
+
+function stopPlayback() {
+  if (playbackSource) {
+    playbackSource.stop();
+    playbackSource = null;
+  }
 }
 
-function exportWav(){
-const b=audioToWav(newBuf);
-const a=document.createElement("a");
-a.href=URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
-a.download="edited.wav";a.click();
+function playAll() {
+  stopPlayback();
+  playbackSource = audioContext.createBufferSource();
+  playbackSource.buffer = editedAudioBuffer;
+  playbackSource.connect(audioContext.destination);
+  playbackSource.start();
 }
 
-function audioToWav(b){
-const l=b.length*2*b.numberOfChannels+44;
-const v=new DataView(new ArrayBuffer(l));
-let p=0;
-const w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(i))};
-w("RIFF");v.setUint32(p,l-8,true);p+=4;
-w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
-v.setUint16(p,1,true);p+=2;
-v.setUint16(p,b.numberOfChannels,true);p+=2;
-v.setUint32(p,b.sampleRate,true);p+=4;
-v.setUint32(p,b.sampleRate*2*b.numberOfChannels,true);p+=4;
-v.setUint16(p,2*b.numberOfChannels,true);p+=2;
-v.setUint16(p,16,true);p+=2;
-w("data");v.setUint32(p,l-44,true);p+=4;
-for(let i=0;i<b.length;i++)
-for(let c=0;c<b.numberOfChannels;c++){
-let s=Math.max(-1,Math.min(1,b.getChannelData(c)[i]));
-v.setInt16(p,s*32767,true);p+=2;
-}
-return v;
+/* ===============================
+   WAV EXPORT (FIXED)
+================================ */
+
+function audioBufferToWav(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const len = buffer.length * numCh * 2;
+  const ab = new ArrayBuffer(44 + len);
+  const v = new DataView(ab);
+  let p = 0;
+
+  function w(s) { for (let i = 0; i < s.length; i++) v.setUint8(p++, s.charCodeAt(i)); }
+
+  w("RIFF"); v.setUint32(p, 36 + len, true); p += 4;
+  w("WAVEfmt "); v.setUint32(p, 16, true); p += 4;
+  v.setUint16(p, 1, true); p += 2;
+  v.setUint16(p, numCh, true); p += 2;
+  v.setUint32(p, buffer.sampleRate, true); p += 4;
+  v.setUint32(p, buffer.sampleRate * numCh * 2, true); p += 4;
+  v.setUint16(p, numCh * 2, true); p += 2;
+  v.setUint16(p, 16, true); p += 2;
+  w("data"); v.setUint32(p, len, true); p += 4;
+
+  for (let i = 0; i < buffer.length; i++) {
+    for (let c = 0; c < numCh; c++) {
+      v.setInt16(p, buffer.getChannelData(c)[i] * 0x7fff, true);
+      p += 2;
+    }
+  }
+  return new Blob([ab], { type: "audio/wav" });
 }
 
-/* ========= NEW FEATURES ========= */
+/* ===============================
+   LOAD FILE
+================================ */
 
-/* 1. dark / light theme */
-themeBtn.onclick=()=>{
-document.body.classList.toggle('light');
-themeBtn.textContent=document.body.classList.contains('light')?'☀️':'🌙';
-};
-
-/* 2. drag-and-drop file */
-window.addEventListener('dragover',e=>e.preventDefault());
-window.addEventListener('drop',async e=>{
-e.preventDefault();
-const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('audio/'));
-if(f)await loadAudio(f);
-});
-
-/* 3. real-time level meter */
-let meterRAF;
-function startMeter(){
-if(meterRAF)cancelAnimationFrame(meterRAF);
-const c=document.getElementById('levelMeter');
-const g=c.getContext('2d');
-function frame(){
-g.clearRect(0,0,c.width,c.height);
-if(source){
-const d=newBuf.getChannelData(0);
-let max=0;
-for(let i=0;i<5000;i++)max=Math.max(max,Math.abs(d[i]));
-const pct=Math.max(0,Math.min(1,(20*Math.log10(max||1e-6)+60)/60));
-const grd=g.createLinearGradient(0,0,c.width,0);
-grd.addColorStop(0,'#4CAF50');grd.addColorStop(.8,'#FFC107');grd.addColorStop(1,'#F44336');
-g.fillStyle=grd;g.fillRect(0,0,c.width*pct,c.height);
-}
-meterRAF=requestAnimationFrame(frame);
-}
-frame();
+async function handleFileLoad(file) {
+  await initAudioSystem();
+  const buf = await audioContext.decodeAudioData(await file.arrayBuffer());
+  originalAudioBuffer = buf;
+  editedAudioBuffer = cloneBuffer(buf);
+  displayWaveform(editedAudioBuffer);
 }
 
-/* 4. animate playhead */
-let startTime;
-function animatePlayhead(){
-if(!source)return;
-const elapsed=ctx.currentTime-startTime;
-const pct=Math.min(1,elapsed/newBuf.duration);
-ph.style.left=(pct*100)+'%';
-if(source)requestAnimationFrame(animatePlayhead);
-}
+/* ===============================
+   START
+================================ */
 
-/* 5. keyboard shortcuts */
-window.addEventListener('keydown',e=>{
-if(e.target.tagName==='INPUT')return;
-switch(e.key){
-case ' ':e.preventDefault();source?stop():play();break;
-case 'a':selectAll();break;
-case 'z':undo();break;
-case 'e':exportWav();break;
-}
-});
-
-/* 6. export MP3 (requires lamejs) */
-async function exportMp3(){
-if(!newBuf){alert('Nothing to export');return;}
-status('Encoding MP3…');
-await import('https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js');
-const sampleBlock=1152;
-const enc=new lamejs.Mp3Encoder(2,newBuf.sampleRate,128);
-const left=newBuf.getChannelData(0);
-const right=newBuf.numberOfChannels>1?newBuf.getChannelData(1):left;
-const samples=new Int16Array(sampleBlock*2);
-let mp3=[];
-for(let i=0;i<left.length;i+=sampleBlock){
-for(let j=0;j<sampleBlock;j++){
-samples[2*j]=Math.max(-1,Math.min(1,left[i+j]||0))*0x7FFF;
-samples[2*j+1]=Math.max(-1,Math.min(1,right[i+j]||0))*0x7FFF;
-}
-const buf=enc.encodeBuffer(samples);
-if(buf.length)mp3.push(buf);
-}
-const end=enc.flush();if(end.length)mp3.push(end);
-const blob=new Blob(mp3,{type:'audio/mp3'});
-const url=URL.createObjectURL(blob);
-Object.assign(document.createElement('a'),{href:url,download:'edited.mp3'}).click();
-URL.revokeObjectURL(url);
-status('MP3 exported');
-}
-
-/* ========= BOOT ========= */
-window.onload=()=>status('Ready – load or drop audio');
+window.addEventListener("load", initAudioSystem);
 </script>
-</body>
-</html>
