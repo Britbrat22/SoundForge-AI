@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BandLab-Style AI DAW</title>
+<title>BandLab-Style AI DAW – Working Playback</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 :root{
@@ -15,10 +15,8 @@ body{
   min-height:100vh;
   display:flex;
   flex-direction:column;
-  overflow:hidden;
+  overflow:auto;
 }
-
-/* HEADER */
 header{
   padding:8px;
   background:#161616;
@@ -40,30 +38,32 @@ button{
   cursor:pointer;
 }
 button.danger{background:var(--danger);}
-
-/* MAIN DAW */
-#dawPage{
-  display:none;
-  flex-direction:column;
-  flex:1 1 auto;
-  min-height:0;
-}
 main{
   display:flex;
   flex:1 1 auto;
   min-height:0;
-  overflow:hidden;
 }
 .left{
-  flex:0 0 260px;
+  width:260px;
   background:var(--panel);
   padding:8px;
   overflow-y:auto;
-  min-height:0;
   border-right:1px solid var(--border);
+  max-height: calc(100vh - 50px);
+}
+.track-controls{
+  background:rgba(0,0,0,.3);
+  padding:6px;
+  margin-bottom:6px;
+  border-radius:4px;
+}
+.track-controls h4{
+  font-size:12px;
+  margin-bottom:4px;
+  color:var(--accent);
 }
 .timeline-wrap{
-  flex:1 1 auto;
+  flex:1;
   display:flex;
   flex-direction:column;
   min-height:0;
@@ -84,9 +84,8 @@ main{
   color:#888;
 }
 .timeline-body{
-  flex:1 1 auto;
-  overflow-y:auto;
-  min-height:0;
+  flex:1;
+  overflow:auto;
 }
 .track-lane{
   height:80px;
@@ -125,9 +124,9 @@ main{
 .loop-lib{background:rgba(0,0,0,.3);padding:6px;border-radius:4px;font-size:10px;margin-top:4px;}
 .chat-box{height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
 .chat-input{width:100%;margin-top:4px;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
-footer{padding:6px;background:#161616;position:sticky;bottom:0;z-index:5;}
+footer{padding:6px;background:#161616;position:sticky;bottom:0;}
 
-/* UNLOCK SCREEN */
+/* unlock screen only */
 #unlockScreen{
   position:fixed;
   inset:0;
@@ -150,21 +149,20 @@ footer{padding:6px;background:#161616;position:sticky;bottom:0;z-index:5;}
   max-width:500px;
   text-align:center;
   color:#888;
-  cursor:pointer;
 }
 </style>
 </head>
 <body>
 
-<!-- UNLOCK SCREEN -->
+<!-- ========= UNLOCK SCREEN ========= -->
 <div id="unlockScreen">
   <button id="unlockBtn">Unlock & Upload</button>
   <div id="unlockDrop">Drop files here or click "Unlock & Upload"</div>
   <input type="file" id="unlockInput" multiple accept="audio/*,.mid,.midi" style="display:none">
 </div>
 
-<!-- DAW PAGE -->
-<div id="dawPage" style="flex:1 1 auto; display:flex; flex-direction:column;">
+<!-- ========= MAIN DAW (hidden until unlock) ========= -->
+<div id="dawPage" style="display:none;flex-direction:column;height:100vh">
 <header>
   <div class="drop-here" id="dropZone">Drop audio / MIDI files here (or click)</div>
   <button onclick="playAll()">▶️ Play</button>
@@ -226,10 +224,9 @@ footer{padding:6px;background:#161616;position:sticky;bottom:0;z-index:5;}
   </div>
   <div class="timeline-body" id="timeline"></div>
 </div>
-</main>
+</div>
 
 <footer id="status">Ready – drop audio / MIDI files to start</footer>
-</div>
 
 <script>
 /* ===== GLOBALS ===== */
@@ -245,20 +242,27 @@ let clipboard=null; const undoStack=[];
 function status(msg){document.getElementById("status").innerText=msg;}
 function addHistory(msg){document.getElementById("history").innerHTML+=msg+"<br>";}
 
-/* ===== UNLOCK SCREEN ===== */
+/* ===== UNLOCK FLOW ===== */
 const unlockScreen=document.getElementById("unlockScreen");
 const unlockBtn=document.getElementById("unlockBtn");
 const unlockInput=document.getElementById("unlockInput");
 const unlockDrop=document.getElementById("unlockDrop");
 
-unlockBtn.onclick = async () => { await ctx.resume(); unlockInput.click(); };
-unlockDrop.onclick = () => unlockInput.click();
-unlockDrop.ondragover = e=>{ e.preventDefault(); unlockDrop.style.borderColor="#4ecdc4"; };
-unlockDrop.ondrop = async e=>{ e.preventDefault(); unlockDrop.style.borderColor="#555"; await addFiles([...e.dataTransfer.files]); };
+unlockBtn.onclick=()=>{
+  ctx.resume().then(()=>{
+    unlockInput.click();                 // open picker
+  });
+};
+unlockDrop.onclick=()=>unlockInput.click();
+unlockDrop.ondragover=e=>{e.preventDefault(); unlockDrop.style.borderColor="#4ecdc4";};
+unlockDrop.ondrop=async e=>{
+  e.preventDefault(); unlockDrop.style.borderColor="#555";
+  await addFiles([...e.dataTransfer.files]);
+};
 
-unlockInput.onchange = async e => { await addFiles([...e.target.files]); };
+unlockInput.onchange=async e=>await addFiles([...e.target.files]);
 
-/* ===== FILE DROP (DAW) ===== */
+/* ===== FILE / DROP (DAW page) ===== */
 const dropZone=document.getElementById("dropZone");
 const fileInput=document.getElementById("fileInput");
 dropZone.onclick=()=>fileInput.click();
@@ -266,7 +270,6 @@ dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4"
 dropZone.ondrop=async e=>{e.preventDefault(); dropZone.style.borderColor="#444"; await addFiles([...e.dataTransfer.files]);};
 fileInput.onchange=async e=>await addFiles([...e.target.files]);
 
-/* ===== ADD FILES ===== */
 async function addFiles(files){
   for(const f of files){
     const buf=await f.arrayBuffer();
@@ -295,36 +298,71 @@ async function midiToNotes(buf){return [{pitch:60,velocity:100,start:0,end:0.5},
 
 /* ===== PLAYBACK ===== */
 let playInterval;
-function playAll(){ if(isPlaying)return; isPlaying=true; playInterval=setInterval(()=>{playhead+=0.01; updatePlayhead(); if(loop && playhead>getMaxDur()) playhead=0;},10); tracks.forEach(playTrack); status("Playing");}
-function stopAll(){ isPlaying=false; clearInterval(playInterval); tracks.forEach(t=>{if(t.source) t.source.stop();}); playhead=0; updatePlayhead(); status("Stopped");}
-function updatePlayhead(){const ruler=document.getElementById("ruler"); const left=(playhead/getMaxDur())*ruler.offsetWidth; document.getElementById("playhead").style.left=left+"px";}
-function getMaxDur(){return tracks.reduce((max,t)=>{if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end)); if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end)); return max;},0)||1;}
+function playAll(){
+  if(isPlaying)return;
+  isPlaying=true;
+  playInterval=setInterval(()=>{
+    playhead+=0.01;
+    updatePlayhead();
+    if(loop && playhead>getMaxDur()) playhead=0;
+  },10);
+  tracks.forEach(playTrack);
+  status("Playing");
+}
+function stopAll(){
+  isPlaying=false;
+  clearInterval(playInterval);
+  tracks.forEach(t=>{if(t.source) t.source.stop();});
+  playhead=0;
+  updatePlayhead();
+  status("Stopped");
+}
+function updatePlayhead(){
+  const ruler=document.getElementById("ruler");
+  const maxDur=getMaxDur();
+  const left=maxDur?(playhead/maxDur)*ruler.offsetWidth:0;
+  document.getElementById("playhead").style.left=left+"px";
+}
+function getMaxDur(){
+  return tracks.reduce((max,t)=>{
+    if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end));
+    if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end));
+    return max;
+  },0)||1;
+}
 function loopToggle(){loop=!loop; status(loop?"Loop ON":"Loop OFF");}
+
 function playTrack(t){
   if(t.type==="audio" && t.buffer){
     t.source=ctx.createBufferSource();
     t.source.buffer=t.buffer;
-    t.source.connect(t.gain); t.gain.connect(t.pan); t.pan.connect(masterGain);
-    t.source.start(ctx.currentTime,playhead);
+    t.source.connect(t.gain);
+    t.gain.connect(t.pan);
+    t.pan.connect(masterGain);
+    const offset=playhead;
+    const dur=t.buffer.duration-offset;
+    if(dur>0) t.source.start(0,offset,dur);
   }
 }
 
-/* ===== UI ===== */
+/* ===== UI HELPERS ===== */
 function renderRuler(){
   const ruler=document.getElementById("ruler");
   ruler.innerHTML="";
   const dur=getMaxDur();
-  for(let i=0;i<=dur;i++){
+  const pxPerSec=ruler.offsetWidth/dur;
+  for(let i=0;i<=dur;i+=1){
     const tick=document.createElement("div");
     tick.style.position="absolute";
-    tick.style.left=(i/dur)*ruler.offsetWidth+"px";
+    tick.style.left=(i*pxPerSec)+"px";
     tick.style.top="0";
     tick.style.width="1px";
     tick.style.height="100%";
-    tick.style.background="#444";
-    tick.innerHTML=`<span style="margin-left:2px">${i}s</span>`;
+    tick.style.background="#888";
+    tick.innerHTML=`<span style="margin-left:2px;font-size:10px">${i}s</span>`;
     ruler.appendChild(tick);
   }
+  document.getElementById("playhead").style.display="block";
 }
 function createTrackLane(id){
   const lane=document.createElement("div");
@@ -341,7 +379,7 @@ function createMidiLane(id){
   document.getElementById("timeline").appendChild(lane);
 }
 
-/* ===== STUBS ===== */
+/* ===== STUBS FOR BUTTONS ===== */
 function splitAtPlayhead(){}
 function copyClip(){}
 function pasteClip(){}
@@ -358,7 +396,7 @@ function addLoop(){}
 function sendChat(){}
 function undoLast(){}
 
-/* ===== REVERB IMPULSE ===== */
+/* ===== IMPULSE FOR REVERB ===== */
 function buildImpulse(){
   const len=ctx.sampleRate*2;
   const impulse=ctx.createBuffer(2,len,ctx.sampleRate);
@@ -368,10 +406,10 @@ function buildImpulse(){
   }
   masterReverb.buffer=impulse;
 }
+buildImpulse();
 
 /* ===== INIT ===== */
-window.onload=()=>{addHistory("App ready"); status("Press Unlock & Upload to begin"); buildImpulse();};
+window.onload=()=>{addHistory("App ready"); status("Press Unlock & Upload to begin");};
 </script>
-
 </body>
 </html>
