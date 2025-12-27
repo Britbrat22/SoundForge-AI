@@ -9,23 +9,113 @@
   --bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
-body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-header{padding:8px;background:#161616;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-button{background:var(--accent);border:none;padding:6px 10px;border-radius:4px;color:#000;font-weight:bold;cursor:pointer;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:auto; /* allow scrolling if needed */
+}
+header{
+  padding:8px;
+  background:#161616;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+button{
+  background:var(--accent);
+  border:none;
+  padding:6px 10px;
+  border-radius:4px;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
 button.danger{background:var(--danger);}
-main{display:flex;flex:1;overflow:hidden;}
-.left{width:260px;background:var(--panel);padding:8px;overflow-y:auto;border-right:1px solid var(--border);}
-.track-controls{background:rgba(0,0,0,.3);padding:6px;margin-bottom:6px;border-radius:4px;}
-.track-controls h4{font-size:12px;margin-bottom:4px;color:var(--accent);}
-.timeline-wrap{flex:1;display:flex;flex-direction:column;}
-.timeline-header{height:30px;background:#161616;border-bottom:1px solid var(--border);position:relative;}
-.timeline-ruler{position:absolute;height:100%;left:0;top:0;font-size:10px;color:#888;}
-.timeline-body{flex:1;overflow:auto;}
-.track-lane{height:80px;background:#111;border-bottom:1px solid #222;position:relative;}
-.wave-canvas{width:100%;height:100%;cursor:pointer;}
-.midi-canvas{width:100%;height:100%;cursor:pointer;background:#000;}
-.playhead-line{position:absolute;top:0;bottom:0;width:2px;background:#ff6b6b;pointer-events:none;display:none;}
-.drop-here{border:2px dashed #444;border-radius:6px;padding:20px;text-align:center;font-size:12px;color:#888;margin-bottom:8px;}
+main{
+  display:flex;
+  flex:1 1 auto;
+  min-height:0; /* needed for flex scroll */
+}
+.left{
+  width:260px;
+  background:var(--panel);
+  padding:8px;
+  overflow-y:auto; /* scrollable panel */
+  border-right:1px solid var(--border);
+  max-height: calc(100vh - 50px); /* account for header/footer */
+}
+.track-controls{
+  background:rgba(0,0,0,.3);
+  padding:6px;
+  margin-bottom:6px;
+  border-radius:4px;
+}
+.track-controls h4{
+  font-size:12px;
+  margin-bottom:4px;
+  color:var(--accent);
+}
+.timeline-wrap{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+}
+.timeline-header{
+  height:30px;
+  background:#161616;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.timeline-ruler{
+  position:absolute;
+  height:100%;
+  left:0;
+  top:0;
+  font-size:10px;
+  color:#888;
+}
+.timeline-body{
+  flex:1;
+  overflow:auto; /* scroll timeline vertically if needed */
+}
+.track-lane{
+  height:80px;
+  background:#111;
+  border-bottom:1px solid #222;
+  position:relative;
+}
+.wave-canvas,.midi-canvas{
+  width:100%;
+  height:100%;
+  cursor:pointer;
+}
+.playhead-line{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:2px;
+  background:#ff6b6b;
+  pointer-events:none;
+  display:none;
+}
+.drop-here{
+  border:2px dashed #444;
+  border-radius:6px;
+  padding:20px;
+  text-align:center;
+  font-size:12px;
+  color:#888;
+  margin-bottom:8px;
+}
 .fader{width:100%;margin:3px 0;}
 .small{font-size:10px;color:#888;}
 .history{max-height:100px;overflow-y:auto;font-size:10px;}
@@ -34,6 +124,7 @@ main{display:flex;flex:1;overflow:hidden;}
 .loop-lib{background:rgba(0,0,0,.3);padding:6px;border-radius:4px;font-size:10px;margin-top:4px;}
 .chat-box{height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
 .chat-input{width:100%;margin-top:4px;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
+footer{padding:6px;background:#161616;position:sticky;bottom:0;}
 </style>
 </head>
 <body>
@@ -114,7 +205,6 @@ masterGain.connect(masterComp); masterComp.connect(masterReverb); masterReverb.c
 
 let clipboard=null; const undoStack=[];
 
-/* ===== UTILS ===== */
 function status(msg){document.getElementById("status").innerText=msg;}
 function addHistory(msg){document.getElementById("history").innerHTML+=msg+"<br>";}
 
@@ -145,43 +235,14 @@ async function addFiles(files){
   status(`${tracks.length} file(s) loaded`);
 }
 
-/* ===== MIDI STUB ===== */
 async function midiToNotes(buf){return [{pitch:60,velocity:100,start:0,end:0.5},{pitch:64,velocity:90,start:0.5,end:1},{pitch:67,velocity:80,start:1,end:1.5}];}
 
-/* ===== PLAYHEAD / TRANSPORT ===== */
-let playInterval;
-function playAll(){
-  if(isPlaying) return;
-  isPlaying=true;
-  playInterval=setInterval(()=>{
-    playhead+=0.01; updatePlayhead();
-    if(loop && playhead>getMaxDur()) playhead=0;
-  },10);
-  tracks.forEach(playTrack);
-  status("Playing");
-}
-function stopAll(){
-  isPlaying=false; clearInterval(playInterval);
-  tracks.forEach(t=>{if(t.source) t.source.stop();});
-  playhead=0; updatePlayhead();
-  status("Stopped");
-}
-function updatePlayhead(){
-  const ruler=document.getElementById("ruler");
-  const left=(playhead/getMaxDur())*ruler.offsetWidth;
-  document.getElementById("playhead").style.left=left+"px";
-}
-function getMaxDur(){return tracks.reduce((max,t)=>{
-  if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end));
-  if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end));
-  return max;
-},0)||1;}
+function playAll(){ if(isPlaying)return; isPlaying=true; playInterval=setInterval(()=>{playhead+=0.01; updatePlayhead(); if(loop && playhead>getMaxDur()) playhead=0;},10); tracks.forEach(playTrack); status("Playing");}
+function stopAll(){ isPlaying=false; clearInterval(playInterval); tracks.forEach(t=>{if(t.source) t.source.stop();}); playhead=0; updatePlayhead(); status("Stopped");}
+function updatePlayhead(){const ruler=document.getElementById("ruler"); const left=(playhead/getMaxDur())*ruler.offsetWidth; document.getElementById("playhead").style.left=left+"px";}
+function getMaxDur(){return tracks.reduce((max,t)=>{if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end)); if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end)); return max;},0)||1;}
 function loopToggle(){loop=!loop; status(loop?"Loop ON":"Loop OFF");}
 
-/* ===== CLIP & EDIT ===== */
-// ... keep your split, copy, paste, delete as-is, just use single clipboard
-
-/* ===== INIT ===== */
 buildImpulse();
 window.onload=()=>{addHistory("App ready"); status("Drop audio / MIDI files to start");};
 </script>
