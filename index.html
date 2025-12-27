@@ -1,1599 +1,1032 @@
-       <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Audio Enhancement Studio - Complete</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <title>AI Audio Editor - Selective Editing & Effects</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
-            overflow: hidden;
-            height: 100vh;
-        }
-
-        .daw-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #4ecdc4;
-            flex-shrink: 0;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #4ecdc4;
-        }
-
-        .ai-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ai-indicator {
-            width: 12px;
-            height: 12px;
-            background: #4ecdc4;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .transport-controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        .transport-btn {
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .transport-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
-        }
-
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .ai-assistant-panel {
-            width: 300px;
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border-right: 1px solid #333;
-            padding: 20px;
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-
-        .ai-section {
-            margin-bottom: 25px;
-        }
-
-        .ai-section-title {
-            color: #4ecdc4;
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-
-        .ai-button {
-            width: 100%;
-            background: linear-gradient(135deg, #ff6b6b, #ff8555);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 10px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .ai-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
-
-        .ai-status-text {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
-
-        .track-area {
-            flex: 1;
-            background: #0f0f0f;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .upload-section-main {
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        .upload-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .upload-header h2 {
-            color: #4ecdc4;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .upload-header p {
-            color: #888;
-            font-size: 16px;
-        }
-
-        .upload-section {
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border: 2px dashed #4ecdc4;
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .upload-section:hover {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #252525, #2a2a2a);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
-        }
-
-        .upload-section.dragover {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #2a2a2a, #333);
-            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
-        }
-
-        .upload-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            display: block;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        .upload-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #4ecdc4;
-            margin-bottom: 10px;
-        }
-
-        .upload-subtitle {
-            font-size: 16px;
-            color: #888;
-            margin-bottom: 20px;
-        }
-
-        .upload-button {
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
-
-        .upload-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
-        }
-
-        .quick-upload-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .quick-upload-btn {
-            background: linear-gradient(135deg, #ff6b6b, #ff8555);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .quick-upload-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
-
-        .upload-info {
-            font-size: 14px;
-            color: #888;
-            margin-top: 15px;
-        }
-
-        .file-input-hidden {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .upload-preview {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            display: none;
-        }
-
-        .upload-preview.active {
-            display: block;
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
-        }
-
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .file-icon {
-            font-size: 20px;
-        }
-
-        .file-details {
-            text-align: left;
-        }
-
-        .file-name {
-            font-weight: bold;
-            color: #4ecdc4;
-        }
-
-        .file-size {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .file-status {
-            font-size: 12px;
-            color: #4ecdc4;
-        }
-
-        .processing-animation {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4ecdc4;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .ai-enhancement-panel {
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
-        }
-
-        .ai-enhancement-title {
-            color: #4ecdc4;
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .ai-enhancement-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .ai-slider-control {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .ai-slider-label {
-            color: #4ecdc4;
-            font-weight: bold;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .ai-slider {
-            width: 100%;
-            margin-bottom: 5px;
-        }
-
-        .ai-slider-value {
-            text-align: center;
-            color: #888;
-            font-size: 12px;
-        }
-
-        .tracks-container {
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #333;
-            min-height: 400px;
-            overflow-y: auto;
-        }
-
-        .track {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .track:hover {
-            border-color: #4ecdc4;
-            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.2);
-        }
-
-        .track-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .track-name {
-            font-weight: bold;
-            color: #4ecdc4;
-            font-size: 16px;
-        }
-
-        .ai-track-analysis {
-            font-size: 12px;
-            color: #888;
-            background: rgba(0,0,0,0.3);
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-
-        .track-controls-track {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .track-btn {
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .track-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4);
-        }
-
-        .waveform-container {
-            position: relative;
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px;
-            padding: 10px;
-            height: 120px;
-        }
-
-        .waveform-canvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 4px;
-        }
-
-        .ai-overlay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(78, 205, 196, 0.9);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .ai-chat-interface {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            height: 500px;
-            background: linear-gradient(135deg, #1a1a1a, #252525);
-            border: 2px solid #4ecdc4;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: none;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        .ai-chat-header {
-            background: #4ecdc4;
-            color: white;
-            padding: 15px;
-            border-radius: 10px 10px 0 0;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .ai-chat-close {
-            cursor: pointer;
-            font-size: 18px;
-        }
-
-        .ai-chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.2);
-        }
-
-        .ai-chat-message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            max-width: 80%;
-        }
-
-        .ai-chat-user {
-            background: #4ecdc4;
-            color: white;
-            margin-left: auto;
-        }
-
-        .ai-chat-assistant {
-            background: rgba(255,255,255,0.1);
-            color: #ccc;
-        }
-
-        .ai-chat-input-container {
-            padding: 15px;
-            border-top: 1px solid #333;
-            display: flex;
-            gap: 10px;
-        }
-
-        .ai-chat-input {
-            flex: 1;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid #4ecdc4;
-            color: white;
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        .ai-chat-send {
-            background: #4ecdc4;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .recording-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #ff6b6b, #ff8555);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
-            display: none;
-            z-index: 2000;
-        }
-
-        .recording-indicator.active {
-            display: block;
-            animation: pulse 1s infinite;
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.3);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #4ecdc4;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #45b7d1;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .ai-assistant-panel {
-                width: 100%;
-                height: 200px;
-            }
-            
-            .transport-controls {
-                flex-wrap: wrap;
-                gap: 5px;
-            }
-            
-            .quick-upload-buttons {
-                flex-direction: column;
-            }
-            
-            .ai-chat-interface {
-                width: 90%;
-                right: 5%;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; overflow: hidden; height: 100vh; }
+        
+        .daw-container { display: flex; flex-direction: column; height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a1a1a, #252525); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+        
+        /* LEFT PANEL - EDITING TOOLS */
+        .edit-panel { width: 350px; background: #1a1a1a; padding: 20px; overflow-y: auto; border-right: 1px solid #333; }
+        .edit-section { margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; }
+        .edit-section h3 { color: #4ecdc4; margin-bottom: 15px; font-size: 16px; }
+        
+        /* SELECTION CONTROLS */
+        .selection-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .time-input { background: #333; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px; width: 80px; }
+        
+        /* EFFECT CONTROLS */
+        .effect-control { margin-bottom: 15px; }
+        .effect-control label { display: block; color: #ccc; margin-bottom: 5px; font-size: 14px; }
+        .effect-slider { width: 100%; margin-bottom: 5px; }
+        .effect-value { text-align: center; color: #4ecdc4; font-size: 12px; }
+        
+        /* MIDDLE PANEL - WAVEFORM EDITOR */
+        .editor-panel { flex: 1; background: #0f0f0f; padding: 20px; overflow-y: auto; }
+        .waveform-editor { background: #000; border: 2px solid #333; border-radius: 8px; position: relative; min-height: 300px; }
+        
+        /* TIMELINE RULER */
+        .timeline-ruler { 
+            height: 30px; background: #1a1a1a; border-bottom: 1px solid #444; 
+            position: relative; overflow: hidden;
+        }
+        .time-marker { 
+            position: absolute; top: 5px; color: #888; font-size: 10px; 
+            border-left: 1px solid #444; padding-left: 2px;
+        }
+        
+        /* WAVEFORM DISPLAY */
+        .waveform-display { 
+            height: 200px; position: relative; cursor: crosshair;
+            background: linear-gradient(to bottom, #111 0%, #000 50%, #111 100%);
+        }
+        .selection-region { 
+            position: absolute; background: rgba(78, 205, 196, 0.3); 
+            border: 2px solid #4ecdc4; border-radius: 3px;
+            display: none; pointer-events: none;
+        }
+        .playhead { 
+            position: absolute; width: 2px; background: #ff6b6b; 
+            height: 100%; display: none; pointer-events: none;
+        }
+        
+        /* RIGHT PANEL - COMPARISON */
+        .compare-panel { width: 300px; background: #1a1a1a; padding: 20px; border-left: 1px solid #333; }
+        .comparison-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .compare-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .before-btn { background: #666; color: white; }
+        .after-btn { background: #4ecdc4; color: white; }
+        .active { box-shadow: 0 0 10px rgba(78, 205, 196, 0.5); }
+        
+        /* BUTTONS */
+        .btn { 
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1); 
+            color: white; border: none; padding: 10px 15px; 
+            border-radius: 6px; cursor: pointer; font-weight: bold; 
+            margin: 5px 0; transition: all 0.3s ease;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4); }
+        .btn-danger { background: linear-gradient(135deg, #ff6b6b, #ff8555); }
+        
+        /* STATUS BAR */
+        .status-bar { 
+            background: #1a1a1a; padding: 10px 20px; 
+            border-top: 1px solid #333; font-size: 14px;
+            color: #ccc; text-align: center;
+        }
+        
+        /* SCROLLBARS */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: #4ecdc4; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="daw-container">
         <header class="header">
-            <div class="logo">🤖 AI Audio Enhancement Studio</div>
-            <div class="ai-status">
-                <div class="ai-indicator"></div>
-                <span>AI Assistant Active</span>
-                <button class="transport-btn" onclick="toggleAIChat()" style="margin-left: 10px;">💬 Chat</button>
-            </div>
-            <div class="transport-controls">
-                <button class="transport-btn" id="playBtn">▶️ Play</button>
-                <button class="transport-btn" id="stopBtn">⏹️ Stop</button>
-                <button class="transport-btn" id="recordBtn">🔴 Record</button>
-                <button class="transport-btn" id="aiEnhanceBtn">✨ AI Enhance</button>
-                <button class="transport-btn" id="downloadMasterBtn">💾 Export</button>
+            <div class="logo">🎵 AI Audio Editor Pro</div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="loadAudioFile()">📁 Load Audio</button>
+                <button class="btn" onclick="exportEditedAudio()">💾 Export</button>
+                <input type="file" id="audioFileInput" accept="audio/*" style="display: none;" onchange="handleFileLoad(this.files[0])">
             </div>
         </header>
 
         <div class="main-content">
-            <aside class="ai-assistant-panel">
-                <div class="ai-section">
-                    <div class="ai-section-title">🤖 AI AUDIO ANALYSIS</div>
-                    <button class="ai-button" onclick="analyzeAudioQuality()">
-                        🔍 Analyze Audio Quality
-                        <div class="ai-status-text">Detects noise, clipping, frequency issues</div>
-                    </button>
-                    <button class="ai-button" onclick="aiDenoiseVocals()">
-                        🔇 AI Denoise Vocals
-                        <div class="ai-status-text">Remove background noise using ML</div>
-                    </button>
-                    <button class="ai-button" onclick="aiDeverbVocals()">
-                        🏠 AI De-reverb Vocals
-                        <div class="ai-status-text">Remove room echo and reverb</div>
-                    </button>
-                    <button class="ai-button" onclick="aiVocalClarity()">
-                        ✨ AI Vocal Clarity
-                        <div class="ai-status-text">Enhance vocal presence and clarity</div>
-                    </button>
-                    <button class="ai-button" onclick="aiBeatSync()">
-                        🥁 AI Beat Sync
-                        <div class="ai-status-text">Auto-sync vocals to beat</div>
-                    </button>
-                    <button class="ai-button" onclick="aiMasterTrack()">
-                        🎚️ AI Master Track
-                        <div class="ai-status-text">Professional mastering with AI</div>
-                    </button>
+            <!-- LEFT PANEL - EDITING TOOLS -->
+            <div class="edit-panel">
+                <div class="edit-section">
+                    <h3>🎯 SELECTION TOOLS</h3>
+                    <div class="selection-controls">
+                        <div>
+                            <label style="color: #ccc; font-size: 12px;">Start (seconds)</label>
+                            <input type="number" class="time-input" id="selectionStart" value="0" step="0.1">
+                        </div>
+                        <div>
+                            <label style="color: #ccc; font-size: 12px;">End (seconds)</label>
+                            <input type="number" class="time-input" id="selectionEnd" value="0" step="0.1">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="selectAll()" style="width: 100%;">📋 Select All</button>
+                    <button class="btn" onclick="clearSelection()" style="width: 100%;">❌ Clear Selection</button>
                 </div>
 
-                <div class="ai-section">
-                    <div class="ai-section-title">📊 AI DETECTED PROBLEMS</div>
-                    <div id="aiProblems" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; min-height: 100px;">
-                        <div style="color: #888; text-align: center;">Upload audio to see AI analysis...</div>
+                <div class="edit-section">
+                    <h3>🎤 VOCAL EDITING</h3>
+                    <button class="btn" onclick="removeVocals()" style="width: 100%;">🗣️ Remove Vocals</button>
+                    <button class="btn" onclick="isolateVocals()" style="width: 100%;">🎯 Isolate Vocals</button>
+                    <button class="btn" onclick="enhanceVocals()" style="width: 100%;">✨ Enhance Vocals</button>
+                    
+                    <div class="effect-control">
+                        <label>Vocal Volume</label>
+                        <input type="range" class="effect-slider" id="vocalVolume" min="0" max="200" value="100">
+                        <div class="effect-value" id="vocalVolumeValue">100%</div>
                     </div>
                 </div>
 
-                <div class="ai-section">
-                    <div class="ai-section-title">🎯 AI BEAT MATCHER</div>
-                    <div id="aiBeatMatcher" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="color: #888;">No beat detected yet...</div>
+                <div class="edit-section">
+                    <h3>🥁 BEAT EDITING</h3>
+                    <button class="btn" onclick="removeBeat()" style="width: 100%;">🥁 Remove Beat</button>
+                    <button class="btn" onclick="isolateBeat()" style="width: 100%;">🎯 Isolate Beat</button>
+                    <button class="btn" onclick="enhanceBeat()" style="width: 100%;">⚡ Enhance Beat</button>
+                    
+                    <div class="effect-control">
+                        <label>Beat Volume</label>
+                        <input type="range" class="effect-slider" id="beatVolume" min="0" max="200" value="100">
+                        <div class="effect-value" id="beatVolumeValue">100%</div>
                     </div>
                 </div>
 
-                <div class="ai-section">
-                    <div class="ai-section-title">🎵 AI SUGGESTIONS</div>
-                    <div id="aiSuggestions" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; min-height: 80px;">
-                        <div style="color: #888; text-align: center;">AI suggestions will appear here...</div>
-                    </div>
-                </div>
-            </aside>
-
-            <main class="track-area">
-                <div class="upload-section-main">
-                    <div class="upload-header">
-                        <h2>🎵 Upload Your Audio Files</h2>
-                        <p>Drag & drop or click to upload - AI will automatically analyze and enhance</p>
+                <div class="edit-section">
+                    <h3>🎛️ EFFECTS</h3>
+                    <div class="effect-control">
+                        <label>Reverb</label>
+                        <input type="range" class="effect-slider" id="reverbAmount" min="0" max="100" value="0">
+                        <div class="effect-value" id="reverbValue">0%</div>
                     </div>
                     
-                    <div class="upload-section" id="uploadSection">
-                        <div class="upload-icon">📁</div>
-                        <div class="upload-title">Drop Audio Files Here</div>
-                        <div class="upload-subtitle">or click to browse your computer</div>
-                        
-                        <input type="file" id="audioFileInput" class="file-input-hidden" 
-                               accept="audio/*" multiple>
-                        
-                        <button class="upload-button" onclick="triggerFileUpload()">
-                            📁 Browse Files
-                        </button>
-                        
-                        <div class="quick-upload-buttons">
-                            <button class="quick-upload-btn" onclick="uploadSampleAudio('vocals')">
-                                🎤 Upload Sample Vocals
-                            </button>
-                            <button class="quick-upload-btn" onclick="uploadSampleAudio('beat')">
-                                🥁 Upload Sample Beat
-                            </button>
-                            <button class="quick-upload-btn" onclick="uploadSampleAudio('mixed')">
-                                🎵 Upload Sample Mixed
-                            </button>
-                        </div>
-                        
-                        <div class="upload-info">
-                            Supported formats: MP3, WAV, M4A, OGG, WebM, FLAC<br>
-                            Maximum file size: 100MB per file
-                        </div>
-                        
-                        <div class="upload-preview" id="uploadPreview">
-                            <!-- File preview will appear here -->
-                        </div>
-                        
-                        <div class="drag-drop-zone" id="dragDropZone">
-                            <div class="drag-drop-text">📁 Drop files here!</div>
+                    <div class="effect-control">
+                        <label>Echo/Delay</label>
+                        <input type="range" class="effect-slider" id="echoAmount" min="0" max="100" value="0">
+                        <div class="effect-value" id="echoValue">0%</div>
+                    </div>
+                    
+                    <div class="effect-control">
+                        <label>Pitch Shift</label>
+                        <input type="range" class="effect-slider" id="pitchShift" min="-12" max="12" value="0">
+                        <div class="effect-value" id="pitchValue">0 semitones</div>
+                    </div>
+                    
+                    <button class="btn" onclick="applySelectedEffects()" style="width: 100%;">✨ Apply to Selection</button>
+                </div>
+
+                <div class="edit-section">
+                    <h3>🔧 UTILITY</h3>
+                    <button class="btn btn-danger" onclick="deleteSelection()" style="width: 100%;">🗑️ Delete Selection</button>
+                    <button class="btn" onclick="fadeInSelection()" style="width: 100%;">📈 Fade In</button>
+                    <button class="btn" onclick="fadeOutSelection()" style="width: 100%;">📉 Fade Out</button>
+                </div>
+            </div>
+
+            <!-- MIDDLE PANEL - WAVEFORM EDITOR -->
+            <div class="editor-panel">
+                <div class="waveform-editor">
+                    <div class="timeline-ruler" id="timelineRuler"></div>
+                    <div class="waveform-display" id="waveformDisplay">
+                        <div class="selection-region" id="selectionRegion"></div>
+                        <div class="playhead" id="playhead"></div>
+                        <canvas id="waveformCanvas" style="width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn" onclick="playSelected()" style="margin: 0 10px;">▶️ Play Selection</button>
+                    <button class="btn" onclick="playAll()" style="margin: 0 10px;">▶️ Play All</button>
+                    <button class="btn" onclick="stopPlayback()" style="margin: 0 10px;">⏹️ Stop</button>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL - COMPARISON -->
+            <div class="compare-panel">
+                <div class="edit-section">
+                    <h3>🔄 BEFORE/AFTER</h3>
+                    <div class="comparison-controls">
+                        <button class="compare-btn before-btn active" id="beforeBtn" onclick="playBefore()">Before</button>
+                        <button class="compare-btn after-btn" id="afterBtn" onclick="playAfter()">After</button>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; margin-top: 10px;">
+                        <div id="comparisonInfo" style="font-size: 12px; color: #ccc;">
+                            Load audio to compare edits...
                         </div>
                     </div>
                 </div>
 
-                <div class="ai-enhancement-panel">
-                    <div class="ai-enhancement-title">✨ AI Audio Enhancement Controls</div>
-                    <div class="ai-enhancement-controls">
-                        <div class="ai-slider-control">
-                            <label class="ai-slider-label">🔇 AI Noise Reduction</label>
-                            <input type="range" class="ai-slider" id="noiseReduction" min="0" max="100" value="75">
-                            <div class="ai-slider-value" id="noiseReductionValue">75%</div>
+                <div class="edit-section">
+                    <h3>📊 EDIT HISTORY</h3>
+                    <div id="editHistory" style="max-height: 300px; overflow-y: auto;">
+                        <div style="color: #888; font-size: 12px; text-align: center;">
+                            No edits yet...
                         </div>
-                        <div class="ai-slider-control">
-                            <label class="ai-slider-label">🎤 AI Vocal Clarity</label>
-                            <input type="range" class="ai-slider" id="vocalClarity" min="0" max="100" value="60">
-                            <div class="ai-slider-value" id="vocalClarityValue">60%</div>
-                        </div>
-                        <div class="ai-slider-control">
-                            <label class="ai-slider-label">🥁 AI Beat Sync</label>
-                            <input type="range" class="ai-slider" id="beatSync" min="0" max="100" value="80">
-                            <div class="ai-slider-value" id="beatSyncValue">80%</div>
-                        </div>
-                        <div class="ai-slider-control">
-                            <label class="ai-slider-label">🎚️ AI Compression</label>
-                            <input type="range" class="ai-slider" id="compression" min="0" max="100" value="45">
-                            <div class="ai-slider-value" id="compressionValue">45%</div>
+                    </div>
+                    <button class="btn" onclick="undoLastEdit()" style="width: 100%; margin-top: 10px;">↶ Undo Last</button>
+                    <button class="btn" onclick="clearHistory()" style="width: 100%;">🗑️ Clear All</button>
+                </div>
+
+                <div class="edit-section">
+                    <h3>⚡ AI SUGGESTIONS</h3>
+                    <div id="aiSuggestions" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px;">
+                        <div style="color: #888; font-size: 12px;">
+                            AI will suggest edits here...
                         </div>
                     </div>
                 </div>
-
-                <div class="tracks-container" id="tracksContainer">
-                    <!-- Tracks will be dynamically added here -->
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <div class="ai-chat-interface" id="aiChatInterface">
-        <div class="ai-chat-header">
-            🤖 AI Assistant
-            <span class="ai-chat-close" onclick="toggleAIChat()">✖</span>
-        </div>
-        <div class="ai-chat-messages" id="aiChatMessages">
-            <div class="ai-chat-message ai-chat-assistant">
-                👋 Hello! I'm your AI audio assistant. Upload your audio files and I'll help you enhance them with professional-quality AI processing!
             </div>
         </div>
-        <div class="ai-chat-input-container">
-            <input type="text" class="ai-chat-input" id="aiChatInput" 
-                   placeholder="Ask me anything about audio enhancement...">
-            <button class="ai-chat-send" onclick="sendAIChatMessage()">➤</button>
-        </div>
-    </div>
 
-    <div class="recording-indicator" id="recordingIndicator">
-        🔴 AI ANALYZING AUDIO...
+        <div class="status-bar" id="statusBar">
+            🎵 Ready for audio editing... Load a file to get started!
+        </div>
     </div>
 
     <script>
-        // GLOBAL VARIABLES
+        // ===== ADVANCED AUDIO EDITOR WITH SELECTIVE EDITING =====
         let audioContext;
+        let originalAudioBuffer;
+        let editedAudioBuffer;
+        let currentAudioBuffer; // For playback
+        let audioWorklet;
+        
+        // Selection state
+        let selection = { start: 0, end: 0, active: false };
         let isPlaying = false;
-        let isRecording = false;
-        let trackCount = 0;
-        let allTracks = [];
-        let playbackTime = 0;
-        let playInterval = null;
-        let audioBuffers = new Map();
-        let peakData = new Map();
-        let aiEnhancements = {
-            noiseReduction: 75,
-            vocalClarity: 60,
-            beatSync: 80,
-            compression: 45
+        let playbackSource;
+        let editHistory = [];
+        
+        // Effect parameters
+        let effects = {
+            reverb: 0,
+            echo: 0,
+            pitch: 0,
+            vocalVolume: 100,
+            beatVolume: 100
         };
 
-        // FIXED: Added missing initAudioContext function
-        function initAudioContext() {
-            try {
+        // ===== INITIALIZATION =====
+        async function initAudioSystem() {
+            if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                console.log('✅ Audio Context initialized:', audioContext.sampleRate + 'Hz');
-                return true;
-            } catch (error) {
-                console.error('❌ Failed to initialize Audio Context:', error);
-                alert('❌ Audio initialization failed. Your browser may not support Web Audio API.');
-                return false;
+                
+                // Create offline context for processing
+                audioWorklet = {
+                    sampleRate: audioContext.sampleRate,
+                    processAudio: function(buffer, operation, params) {
+                        return new Promise(resolve => {
+                            const offlineContext = new OfflineAudioContext(
+                                buffer.numberOfChannels,
+                                buffer.length,
+                                buffer.sampleRate
+                            );
+                            
+                            const source = offlineContext.createBufferSource();
+                            source.buffer = buffer;
+                            
+                            // Apply processing based on operation
+                            let processed = this.applyOperation(source, operation, params, offlineContext);
+                            
+                            source.connect(processed);
+                            processed.connect(offlineContext.destination);
+                            
+                            source.start();
+                            
+                            offlineContext.startRendering().then(renderedBuffer => {
+                                resolve(renderedBuffer);
+                            });
+                        });
+                    },
+                    
+                    applyOperation: function(source, operation, params, context) {
+                        switch(operation) {
+                            case 'removeVocals':
+                                return this.createVocalRemover(context);
+                            case 'isolateVocals':
+                                return this.createVocalIsolator(context);
+                            case 'reverb':
+                                return this.createReverb(context, params.amount);
+                            case 'echo':
+                                return this.createEcho(context, params.amount);
+                            case 'pitch':
+                                return this.createPitchShift(context, params.semitones);
+                            case 'volume':
+                                return this.createVolume(context, params.amount);
+                            default:
+                                return context.destination;
+                        }
+                    },
+                    
+                    createVocalRemover: function(context) {
+                        // Simple vocal removal by subtracting L-R channels
+                        const merger = context.createChannelMerger(2);
+                        const subtractor = context.createScriptProcessor(4096, 2, 2);
+                        
+                        subtractor.onaudioprocess = function(e) {
+                            const left = e.inputBuffer.getChannelData(0);
+                            const right = e.inputBuffer.getChannelData(1);
+                            const leftOut = e.outputBuffer.getChannelData(0);
+                            const rightOut = e.outputBuffer.getChannelData(1);
+                            
+                            for (let i = 0; i < left.length; i++) {
+                                const diff = (left[i] - right[i]) * 0.7;
+                                leftOut[i] = diff;
+                                rightOut[i] = diff;
+                            }
+                        };
+                        
+                        subtractor.connect(merger);
+                        return subtractor;
+                    },
+                    
+                    createVocalIsolator: function(context) {
+                        // Extract center channel (vocals are usually centered)
+                        const merger = context.createChannelMerger(2);
+                        const isolator = context.createScriptProcessor(4096, 2, 2);
+                        
+                        isolator.onaudioprocess = function(e) {
+                            const left = e.inputBuffer.getChannelData(0);
+                            const right = e.inputBuffer.getChannelData(1);
+                            const leftOut = e.outputBuffer.getChannelData(0);
+                            const rightOut = e.outputBuffer.getChannelData(1);
+                            
+                            for (let i = 0; i < left.length; i++) {
+                                const center = (left[i] + right[i]) * 0.5;
+                                leftOut[i] = center;
+                                rightOut[i] = center;
+                            }
+                        };
+                        
+                        isolator.connect(merger);
+                        return isolator;
+                    },
+                    
+                    createReverb: function(context, amount) {
+                        const convolver = context.createConvolver();
+                        const length = context.sampleRate * 2; // 2 seconds
+                        const impulse = context.createBuffer(2, length, context.sampleRate);
+                        
+                        for (let channel = 0; channel < 2; channel++) {
+                            const channelData = impulse.getChannelData(channel);
+                            for (let i = 0; i < length; i++) {
+                                const decay = Math.pow(1 - i / length, 2);
+                                channelData[i] = (Math.random() * 2 - 1) * decay * amount * 0.3;
+                            }
+                        }
+                        
+                        convolver.buffer = impulse;
+                        return convolver;
+                    },
+                    
+                    createEcho: function(context, amount) {
+                        const delay = context.createDelay(1.0);
+                        const feedback = context.createGain();
+                        const wet = context.createGain();
+                        
+                        delay.delayTime.value = 0.3; // 300ms delay
+                        feedback.gain.value = amount * 0.5;
+                        wet.gain.value = amount * 0.5;
+                        
+                        delay.connect(feedback);
+                        feedback.connect(delay);
+                        
+                        const input = context.createGain();
+                        const output = context.createGain();
+                        
+                        input.connect(delay);
+                        input.connect(output);
+                        delay.connect(wet);
+                        wet.connect(output);
+                        
+                        return input;
+                    },
+                    
+                    createPitchShift: function(context, semitones) {
+                        // Simple pitch shift using playback rate
+                        const pitchShifter = context.createScriptProcessor(4096, 1, 1);
+                        const rate = Math.pow(2, semitones / 12);
+                        
+                        pitchShifter.onaudioprocess = function(e) {
+                            const inputData = e.inputBuffer.getChannelData(0);
+                            const outputData = e.outputBuffer.getChannelData(0);
+                            
+                            // This is a simplified pitch shift - in reality you'd need granular synthesis
+                            for (let i = 0; i < outputData.length; i++) {
+                                const index = i * rate;
+                                const lower = Math.floor(index);
+                                const upper = Math.ceil(index);
+                                const fraction = index - lower;
+                                
+                                if (upper < inputData.length) {
+                                    outputData[i] = inputData[lower] * (1 - fraction) + inputData[upper] * fraction;
+                                } else {
+                                    outputData[i] = 0;
+                                }
+                            }
+                        };
+                        
+                        return pitchShifter;
+                    },
+                    
+                    createVolume: function(context, amount) {
+                        const gain = context.createGain();
+                        gain.gain.value = amount / 100;
+                        return gain;
+                    }
+                };
+                
+                console.log('✅ Advanced audio processing system initialized');
             }
         }
 
-        // ENHANCED UPLOAD FUNCTIONS
-        function setupUploadHandlers() {
-            const uploadSection = document.getElementById('uploadSection');
-            const fileInput = document.getElementById('audioFileInput');
-            const dragDropZone = document.getElementById('dragDropZone');
+        // ===== FILE HANDLING =====
+        async function handleFileLoad(file) {
+            if (!file) return;
             
-            uploadSection.addEventListener('click', function(e) {
-                if (e.target.tagName !== 'BUTTON') {
-                    fileInput.click();
-                }
-            });
-            
-            fileInput.addEventListener('change', function(e) {
-                handleFileUpload(e.target.files);
-            });
-            
-            uploadSection.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                this.classList.add('dragover');
-                dragDropZone.classList.add('active');
-            });
-            
-            uploadSection.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                this.classList.remove('dragover');
-                dragDropZone.classList.remove('active');
-            });
-            
-            uploadSection.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.classList.remove('dragover');
-                dragDropZone.classList.remove('active');
+            try {
+                updateStatus('📁 Loading audio file...');
                 
-                const files = e.dataTransfer.files;
-                handleFileUpload(files);
-            });
+                const arrayBuffer = await file.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                originalAudioBuffer = audioBuffer;
+                editedAudioBuffer = cloneAudioBuffer(audioBuffer);
+                
+                console.log('✅ Audio loaded:', audioBuffer.duration.toFixed(1) + 's');
+                displayWaveform(audioBuffer);
+                updateTimeline(audioBuffer.duration);
+                addToHistory('Original audio loaded');
+                updateAISuggestions();
+                
+                updateStatus('✅ Audio ready for editing!');
+                
+            } catch (error) {
+                console.error('❌ File load error:', error);
+                updateStatus('❌ Error loading audio file');
+            }
         }
 
-        function triggerFileUpload() {
+        function loadAudioFile() {
             document.getElementById('audioFileInput').click();
         }
 
-        async function handleFileUpload(files) {
-            console.log(`📁 Processing ${files.length} audio files...`);
-            
-            if (files.length === 0) return;
-            
-            showUploadPreview(files);
-            
-            for (let file of files) {
-                if (!file.type.startsWith('audio/')) {
-                    alert(`❌ ${file.name} is not an audio file`);
-                    continue;
-                }
-                
-                if (file.size > 100 * 1024 * 1024) {
-                    alert(`❌ ${file.name} is too large (max 100MB)`);
-                    continue;
-                }
-                
-                try {
-                    console.log(`📊 Processing: ${file.name} (${formatFileSize(file.size)})`);
-                    
-                    const audioUrl = URL.createObjectURL(file);
-                    updateFileStatus(file.name, 'processing');
-                    
-                    const audioBuffer = await decodeAudioFile(audioUrl);
-                    await addTrack('uploaded', file.name, audioUrl, audioBuffer);
-                    
-                    updateFileStatus(file.name, 'complete');
-                    console.log(`✅ Added: ${file.name}`);
-                    
-                } catch (error) {
-                    console.error(`❌ Error processing ${file.name}:`, error);
-                    updateFileStatus(file.name, 'error');
-                    alert(`Error processing ${file.name}: ${error.message}`);
-                }
-            }
-            
-            if (allTracks.length > 0) {
-                setTimeout(() => {
-                    analyzeTrackWithAI(allTracks[allTracks.length - 1]);
-                }, 1000);
-            }
-        }
-
-        function showUploadPreview(files) {
-            const preview = document.getElementById('uploadPreview');
-            preview.innerHTML = '';
-            preview.classList.add('active');
-            
-            for (let file of files) {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.id = `file-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`;
-                
-                fileItem.innerHTML = `
-                    <div class="file-info">
-                        <div class="file-icon">🎵</div>
-                        <div class="file-details">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${formatFileSize(file.size)}</div>
-                            <div class="file-status" id="status-${file.name.replace(/[^a-zA-Z0-9]/g, '')}">
-                                📊 Processing...
-                            </div>
-                        </div>
-                    </div>
-                    <div class="processing-animation" id="processing-${file.name.replace(/[^a-zA-Z0-9]/g, '')}"></div>
-                `;
-                
-                preview.appendChild(fileItem);
-            }
-        }
-
-        function updateFileStatus(fileName, status) {
-            const statusId = fileName.replace(/[^a-zA-Z0-9]/g, '');
-            const statusElement = document.getElementById(`status-${statusId}`);
-            const processingElement = document.getElementById(`processing-${statusId}`);
-            
-            if (statusElement) {
-                switch(status) {
-                    case 'processing':
-                        statusElement.textContent = '📊 Processing...';
-                        statusElement.style.color = '#4ecdc4';
-                        break;
-                    case 'complete':
-                        statusElement.textContent = '✅ Complete!';
-                        statusElement.style.color = '#4ecdc4';
-                        if (processingElement) processingElement.style.display = 'none';
-                        break;
-                    case 'error':
-                        statusElement.textContent = '❌ Error';
-                        statusElement.style.color = '#ff6b6b';
-                        if (processingElement) processingElement.style.display = 'none';
-                        break;
-                }
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        }
-
-        function uploadSampleAudio(type) {
-            const sampleFiles = {
-                'vocals': {
-                    name: 'Sample_Vocals.wav',
-                    size: 2.5 * 1024 * 1024,
-                    url: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
-                },
-                'beat': {
-                    name: 'Sample_Beat.mp3',
-                    size: 3.2 * 1024 * 1024,
-                    url: 'data:audio/mp3;base64,//OExAAAAAAAAAAAAFhpbmcAAAAPAAAA'
-                },
-                'mixed': {
-                    name: 'Sample_Mixed.wav',
-                    size: 4.1 * 1024 * 1024,
-                    url: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
-                }
-            };
-            
-            const sample = sampleFiles[type];
-            if (sample) {
-                showUploadPreview([sample]);
-                updateFileStatus(sample.name, 'processing');
-                
-                setTimeout(async () => {
-                    try {
-                        const audioBuffer = await createSampleAudioBuffer();
-                        await addTrack('uploaded', sample.name, sample.url, audioBuffer);
-                        updateFileStatus(sample.name, 'complete');
-                        
-                        setTimeout(() => {
-                            if (allTracks.length > 0) {
-                                analyzeTrackWithAI(allTracks[allTracks.length - 1]);
-                            }
-                        }, 1000);
-                        
-                    } catch (error) {
-                        updateFileStatus(sample.name, 'error');
-                    }
-                }, 2000);
-            }
-        }
-
-        async function createSampleAudioBuffer() {
-            if (!audioContext) initAudioContext();
-            
-            const sampleRate = 44100;
-            const duration = 5;
-            const length = sampleRate * duration;
-            
-            const audioBuffer = audioContext.createBuffer(2, length, sampleRate);
-            
-            for (let channel = 0; channel < 2; channel++) {
-                const channelData = audioBuffer.getChannelData(channel);
-                for (let i = 0; i < length; i++) {
-                    const t = i / sampleRate;
-                    channelData[i] = Math.sin(2 * Math.PI * 440 * t) * 0.3 * Math.exp(-t * 0.5);
-                }
-            }
-            
-            return audioBuffer;
-        }
-
-        async function decodeAudioFile(audioUrl) {
-            try {
-                console.log('🎵 Decoding audio file...');
-                
-                const response = await fetch(audioUrl);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                
-                console.log('✅ Audio decoded successfully:', {
-                    duration: audioBuffer.duration,
-                    sampleRate: audioBuffer.sampleRate,
-                    channels: audioBuffer.numberOfChannels
-                });
-                
-                return audioBuffer;
-                
-            } catch (error) {
-                console.error('❌ Audio decoding failed:', error);
-                throw new Error('Failed to decode audio file. Please ensure it\'s a valid audio format.');
-            }
-        }
-
-        async function addTrack(type = 'audio', fileName = null, audioUrl = null, audioBuffer = null) {
-            trackCount++;
-            const tracksContainer = document.getElementById('tracksContainer');
-            
-            const trackDiv = document.createElement('div');
-            trackDiv.className = 'track';
-            trackDiv.id = `track_${trackCount}`;
-            
-            const displayName = fileName || `Track ${trackCount} (${type})`;
-            
-            const waveformHtml = `
-                <div class="waveform-container">
-                    <canvas class="waveform-canvas" width="800" height="100"></canvas>
-                    <div class="ai-overlay" id="aiOverlay_${trackCount}">🤖 AI Ready</div>
-                </div>
-            `;
-            
-            trackDiv.innerHTML = `
-                <div class="track-info">
-                    <div class="track-name">${displayName}</div>
-                    <div class="ai-track-analysis" id="aiAnalysis_${trackCount}">
-                        🤖 AI: Ready to analyze
-                    </div>
-                    <div class="track-controls-track">
-                        <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
-                        <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
-                        ${audioUrl ? `
-                            <button class="track-btn" onclick="playTrack('${trackDiv.id}')">▶️ Play</button>
-                            <button class="track-btn" onclick="stopTrack('${trackDiv.id}')">⏹️ Stop</button>
-                        ` : `
-                            <button class="track-btn" onclick="recordTrack()">🔴 Record</button>
-                        `}
-                        <button class="track-btn" onclick="aiEnhanceTrack('${trackDiv.id}')">✨ AI Enhance</button>
-                        <button class="track-btn" onclick="deleteTrack('${trackDiv.id}')">🗑️ Delete</button>
-                    </div>
-                </div>
-                ${waveformHtml}
-            `;
-            
-            tracksContainer.appendChild(trackDiv);
-            
-            const trackData = {
-                id: `track_${trackCount}`,
-                name: displayName,
-                type: type,
-                audioUrl: audioUrl,
-                audioBuffer: audioBuffer,
-                peaks: null,
-                audioElement: null,
-                playbackPosition: 0,
-                muted: false,
-                solo: false,
-                aiAnalysis: null
-            };
-            
-            allTracks.push(trackData);
-            
-            if (audioUrl || audioBuffer) {
-                await createWaveformForTrack(trackData);
-            }
-            
-            console.log('✅ Track added with AI capabilities:', displayName);
-        }
-
-        async function createWaveformForTrack(track) {
-            try {
-                let audioBuffer = track.audioBuffer;
-                
-                if (track.audioUrl && !audioBuffer) {
-                    audioBuffer = await decodeAudioFile(track.audioUrl);
-                    track.audioBuffer = audioBuffer;
-                }
-                
-                if (audioBuffer) {
-                    track.peaks = calculatePeakData(audioBuffer);
-                    track.audioElement = new Audio(track.audioUrl);
-                    
-                    track.audioElement.addEventListener('timeupdate', () => {
-                        if (track.audioElement.duration) {
-                            track.playbackPosition = track.audioElement.currentTime / track.audioElement.duration;
-                            updateTrackWaveform(track);
-                        }
-                    });
-                    
-                    updateTrackWaveform(track);
-                    
-                    if (track.type === 'uploaded' || track.type === 'recording') {
-                        analyzeTrackWithAI(track);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Error creating waveform:', error);
-            }
-        }
-
-        function calculatePeakData(audioBuffer) {
-            const channelData = audioBuffer.getChannelData(0);
-            const peaks = [];
-            const samplesPerPeak = Math.floor(channelData.length / 400);
-            
-            for (let i = 0; i < channelData.length; i += samplesPerPeak) {
-                let max = 0;
-                for (let j = 0; j < samplesPerPeak && i + j < channelData.length; j++) {
-                    const sample = Math.abs(channelData[i + j]);
-                    if (sample > max) max = sample;
-                }
-                peaks.push(max);
-            }
-            
-            return peaks;
-        }
-
-        function updateTrackWaveform(track) {
-            const canvas = document.querySelector(`#${track.id} .waveform-canvas`);
-            if (!canvas || !track.peaks) return;
-            
+        // ===== WAVEFORM DISPLAY =====
+        function displayWaveform(audioBuffer) {
+            const canvas = document.getElementById('waveformCanvas');
             const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = 200;
             
             ctx.clearRect(0, 0, width, height);
             
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / width);
+            const amp = height / 2;
+            
             // Draw waveform
             ctx.fillStyle = '#4ecdc4';
-            ctx.strokeStyle = '#4ecdc4';
-            ctx.lineWidth = 2;
-            
-            ctx.beginPath();
-            for (let i = 0; i < track.peaks.length; i++) {
-                const x = (i / track.peaks.length) * width;
-                const y = (1 - track.peaks[i]) * height / 2;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, height / 2);
+            for (let i = 0; i < width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
                 }
-                ctx.lineTo(x, y);
-                ctx.lineTo(x, height - y);
+                ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
             }
-            ctx.stroke();
             
-            // Draw playback position
-            if (track.playbackPosition > 0) {
-                const playX = track.playbackPosition * width;
-                ctx.strokeStyle = '#ff6b6b';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(playX, 0);
-                ctx.lineTo(playX, height);
-                ctx.stroke();
+            // Add click handler for selection
+            canvas.onclick = handleWaveformClick;
+            canvas.onmousedown = handleSelectionStart;
+        }
+
+        function updateTimeline(duration) {
+            const ruler = document.getElementById('timelineRuler');
+            ruler.innerHTML = '';
+            
+            const markers = Math.min(10, Math.floor(duration));
+            for (let i = 0; i <= markers; i++) {
+                const marker = document.createElement('div');
+                marker.className = 'time-marker';
+                marker.style.left = (i / markers * 100) + '%';
+                marker.textContent = (i * duration / markers).toFixed(1) + 's';
+                ruler.appendChild(marker);
             }
         }
 
-        async function analyzeTrackWithAI(track) {
+        // ===== SELECTION HANDLING =====
+        function handleSelectionStart(e) {
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = canvas.width;
+            const duration = originalAudioBuffer.duration;
+            
+            const clickTime = (x / width) * duration;
+            
+            selection.start = clickTime;
+            selection.active = true;
+            
+            // Update selection inputs
+            document.getElementById('selectionStart').value = clickTime.toFixed(1);
+            
+            // Visual feedback
+            canvas.onmousemove = handleSelectionMove;
+            canvas.onmouseup = handleSelectionEnd;
+        }
+
+        function handleSelectionMove(e) {
+            if (!selection.active) return;
+            
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = canvas.width;
+            const duration = originalAudioBuffer.duration;
+            
+            const currentTime = (x / width) * duration;
+            selection.end = Math.max(currentTime, selection.start);
+            
+            // Update selection display
+            document.getElementById('selectionEnd').value = selection.end.toFixed(1);
+            updateSelectionDisplay();
+        }
+
+        function handleSelectionEnd(e) {
+            selection.active = false;
+            e.target.onmousemove = null;
+            e.target.onmouseup = null;
+            console.log('Selection:', selection.start.toFixed(2) + 's', 'to', selection.end.toFixed(2) + 's');
+        }
+
+        function handleWaveformClick(e) {
+            if (selection.active) return;
+            
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = canvas.width;
+            const duration = originalAudioBuffer.duration;
+            
+            const clickTime = (x / width) * duration;
+            
+            // Set playhead position
+            document.getElementById('playhead').style.left = (x / width * 100) + '%';
+            document.getElementById('playhead').style.display = 'block';
+        }
+
+        function updateSelectionDisplay() {
+            const region = document.getElementById('selectionRegion');
+            const canvas = document.getElementById('waveformCanvas');
+            const width = canvas.width;
+            const duration = originalAudioBuffer.duration;
+            
+            if (selection.start !== selection.end) {
+                const startPercent = (selection.start / duration) * 100;
+                const widthPercent = ((selection.end - selection.start) / duration) * 100;
+                
+                region.style.left = startPercent + '%';
+                region.style.width = widthPercent + '%';
+                region.style.display = 'block';
+            } else {
+                region.style.display = 'none';
+            }
+        }
+
+        function selectAll() {
+            if (!originalAudioBuffer) return;
+            
+            selection.start = 0;
+            selection.end = originalAudioBuffer.duration;
+            
+            document.getElementById('selectionStart').value = '0';
+            document.getElementById('selectionEnd').value = selection.end.toFixed(1);
+            
+            updateSelectionDisplay();
+            updateStatus('📋 Selected entire audio');
+        }
+
+        function clearSelection() {
+            selection.start = 0;
+            selection.end = 0;
+            
+            document.getElementById('selectionStart').value = '0';
+            document.getElementById('selectionEnd').value = '0';
+            
+            updateSelectionDisplay();
+            updateStatus('❌ Selection cleared');
+        }
+
+        // ===== EDITING FUNCTIONS =====
+        async function removeVocals() {
+            if (!originalAudioBuffer) {
+                alert('Please load audio first!');
+                return;
+            }
+            
+            updateStatus('🗣️ Removing vocals from selection...');
+            
             try {
-                const analyzer = new AIAudioAnalyzer();
-                const analysis = await analyzer.analyzeAudioBuffer(track.audioBuffer);
-                track.aiAnalysis = analysis;
+                const processedBuffer = await processSelection('removeVocals', {});
                 
-                const aiAnalysisDiv = document.getElementById(`aiAnalysis_${track.id.split('_')[1]}`);
-                if (aiAnalysisDiv) {
-                    aiAnalysisDiv.innerHTML = `
-                        🤖 AI: ${analysis.isVocal ? 'Vocals' : 'Instrumental'} detected<br>
-                        📊 RMS: ${(analysis.rmsLevel * 100).toFixed(0)}% | Peak: ${(analysis.peakLevel * 100).toFixed(0)}%<br>
-                        🎵 BPM: ${analysis.bpm} | Range: ${analysis.dynamicRange.toFixed(1)}dB
-                    `;
-                }
+                // Create new buffer with processed selection
+                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
+                editedAudioBuffer = resultBuffer;
                 
-                const aiOverlay = document.getElementById(`aiOverlay_${track.id.split('_')[1]}`);
-                if (aiOverlay) {
-                    aiOverlay.textContent = '✨ AI Analyzed';
-                }
+                displayWaveform(editedAudioBuffer);
+                addToHistory('Vocals removed from ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
+                updateStatus('✅ Vocals removed from selection!');
                 
             } catch (error) {
-                console.error('❌ AI analysis error:', error);
+                console.error('❌ Vocal removal error:', error);
+                updateStatus('❌ Error removing vocals');
             }
         }
 
-        // AI ENHANCEMENT FUNCTIONS
-        async function aiDenoiseVocals() {
-            showAIProgress('AI: Removing background noise using machine learning...');
-            setTimeout(() => {
-                showAIStatus('✅ AI: Background noise reduced by 78% using spectral subtraction');
-                addAIChatMessage('assistant', 'I\'ve applied advanced spectral subtraction and machine learning algorithms to remove background noise. Your vocals are now much cleaner and professional!');
-            }, 3000);
-        }
-
-        async function aiDeverbVocals() {
-            showAIProgress('AI: Removing room reverb using neural networks...');
-            setTimeout(() => {
-                showAIStatus('✅ AI: Room reverb reduced by 65% using impulse response analysis');
-                addAIChatMessage('assistant', 'I\'ve used neural network-based de-reverberation to remove room echo. Your vocals now sound much more direct and studio-quality!');
-            }, 2500);
-        }
-
-        async function aiVocalClarity() {
-            showAIProgress('AI: Enhancing vocal clarity and presence...');
-            setTimeout(() => {
-                showAIStatus('✅ AI: Vocal clarity enhanced by 82% with intelligent EQ');
-                addAIChatMessage('assistant', 'I\'ve applied intelligent EQ curves and harmonic enhancement to bring out the natural clarity and presence in your vocals. They now cut through the mix much better!');
-            }, 2000);
-        }
-
-        async function aiBeatSync() {
-            showAIProgress('AI: Analyzing beat and syncing vocals...');
-            setTimeout(() => {
-                showAIStatus('✅ AI: Vocals perfectly synced to beat with time-stretching');
-                addAIChatMessage('assistant', 'I\'ve detected the BPM and used advanced time-stretching algorithms to perfectly sync your vocals with the beat. The timing is now locked in!');
-            }, 3000);
-        }
-
-        async function aiMasterTrack() {
-            showAIProgress('AI: Applying professional mastering with ML algorithms...');
-            setTimeout(() => {
-                showAIStatus('✅ AI: Track mastered with loudness: -14 LUFS, dynamic range preserved');
-                addAIChatMessage('assistant', 'I\'ve applied AI-powered mastering with multi-band compression, intelligent limiting, and harmonic excitation. Your track now has professional loudness and clarity ready for streaming platforms!');
-            }, 4000);
-        }
-
-        async function analyzeAudioQuality() {
-            if (allTracks.length === 0) {
-                alert('❌ No tracks to analyze. Please upload audio first!');
+        async function isolateVocals() {
+            if (!originalAudioBuffer) {
+                alert('Please load audio first!');
                 return;
             }
             
-            const track = allTracks[0];
-            if (!track.audioBuffer) {
-                alert('❌ No audio buffer found. Please upload audio first!');
+            updateStatus('🎯 Isolating vocals from selection...');
+            
+            try {
+                const processedBuffer = await processSelection('isolateVocals', {});
+                
+                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
+                editedAudioBuffer = resultBuffer;
+                
+                displayWaveform(editedAudioBuffer);
+                addToHistory('Vocals isolated from ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
+                updateStatus('✅ Vocals isolated from selection!');
+                
+            } catch (error) {
+                console.error('❌ Vocal isolation error:', error);
+                updateStatus('❌ Error isolating vocals');
+            }
+        }
+
+        async function applySelectedEffects() {
+            if (!originalAudioBuffer) {
+                alert('Please load audio first!');
                 return;
             }
             
-            const analyzer = new AIAudioAnalyzer();
-            const analysis = await analyzer.analyzeAudioBuffer(track.audioBuffer);
-            displayAIAnalysis(analysis);
-            updateAIProblems(analyzer.problemsDetected);
-            updateAIBeatMatcher(analysis.bpm);
-            showAIStatus('✅ Audio analysis complete!');
-        }
-
-        // AI ANALYZER CLASS
-        class AIAudioAnalyzer {
-            constructor() {
-                this.problemsDetected = [];
+            if (selection.start === selection.end) {
+                alert('Please select a region first!');
+                return;
             }
-
-            async analyzeAudioBuffer(audioBuffer) {
-                console.log('🤖 AI analyzing audio buffer...');
-                
-                const channelData = audioBuffer.getChannelData(0);
-                const sampleRate = audioBuffer.sampleRate;
-                
-                // Calculate RMS level
-                let sum = 0;
-                for (let i = 0; i < channelData.length; i++) {
-                    sum += channelData[i] * channelData[i];
-                }
-                const rmsLevel = Math.sqrt(sum / channelData.length);
-                
-                // Find peak level
-                let peakLevel = 0;
-                for (let i = 0; i < channelData.length; i++) {
-                    const absSample = Math.abs(channelData[i]);
-                    if (absSample > peakLevel) peakLevel = absSample;
-                }
-                
-                // Detect clipping
-                const clippingSamples = channelData.filter(sample => Math.abs(sample) > 0.95).length;
-                const clippingPercentage = (clippingSamples / channelData.length) * 100;
-                
-                // Estimate BPM (simplified)
-                const bpm = 120 + Math.floor(Math.random() * 40); // Simulated BPM detection
-                
-                // Calculate dynamic range
-                const dynamicRange = 20 * Math.log10(peakLevel / rmsLevel);
-                
-                // Detect if vocals are present (simplified)
-                const isVocal = Math.random() > 0.5;
-                
-                // Detect noise floor
-                const noiseFloor = this.estimateNoiseFloor(channelData);
-                
-                // Detect problems
-                this.problemsDetected = [];
-                if (clippingPercentage > 1) this.problemsDetected.push(`Clipping detected in ${clippingPercentage.toFixed(1)}% of samples`);
-                if (noiseFloor > -40) this.problemsDetected.push(`High noise floor: ${noiseFloor.toFixed(1)}dB`);
-                if (dynamicRange < 6) this.problemsDetected.push(`Low dynamic range: ${dynamicRange.toFixed(1)}dB`);
-                if (rmsLevel < 0.05) this.problemsDetected.push(`Low overall level: ${(rmsLevel * 100).toFixed(1)}%`);
-                
-                const analysis = {
-                    rmsLevel: rmsLevel,
-                    peakLevel: peakLevel,
-                    clippingPercentage: clippingPercentage,
-                    bpm: bpm,
-                    dynamicRange: dynamicRange,
-                    noiseFloor: noiseFloor,
-                    isVocal: isVocal,
-                    duration: audioBuffer.duration,
-                    sampleRate: sampleRate
-                };
-                
-                console.log('✅ AI analysis complete:', analysis);
-                return analysis;
-            }
-
-            estimateNoiseFloor(channelData) {
-                // Simple noise floor estimation
-                const histogram = new Array(100).fill(0);
-                for (let i = 0; i < channelData.length; i++) {
-                    const absSample = Math.abs(channelData[i]);
-                    const bin = Math.floor(absSample * 100);
-                    if (bin < 100) histogram[bin]++;
-                }
-                
-                // Find the noise floor (first significant bin)
-                let noiseFloorBin = 0;
-                for (let i = 0; i < histogram.length; i++) {
-                    if (histogram[i] > channelData.length / 1000) {
-                        noiseFloorBin = i;
-                        break;
-                    }
-                }
-                
-                return 20 * Math.log10(noiseFloorBin / 100);
-            }
-        }
-
-        function displayAIAnalysis(analysis) {
-            const problemsDiv = document.getElementById('aiProblems');
-            problemsDiv.innerHTML = '';
             
-            if (analysis) {
-                const analysisHtml = `
-                    <div style="color: #4ecdc4; margin-bottom: 10px;"><strong>📊 AI Audio Analysis</strong></div>
-                    <div>🎵 Duration: ${analysis.duration.toFixed(1)}s @ ${analysis.sampleRate}Hz</div>
-                    <div>📈 Peak Level: ${(analysis.peakLevel * 100).toFixed(1)}%</div>
-                    <div>📊 RMS Level: ${(analysis.rmsLevel * 100).toFixed(1)}%</div>
-                    <div>🎵 Detected BPM: ${analysis.bpm}</div>
-                    <div>🔄 Dynamic Range: ${analysis.dynamicRange.toFixed(1)}dB</div>
-                    <div>🔇 Noise Floor: ${analysis.noiseFloor.toFixed(1)}dB</div>
-                    <div style="margin-top: 10px; color: ${analysis.isVocal ? '#4ecdc4' : '#ff6b6b'};">
-                        ${analysis.isVocal ? '🎤 Vocals Detected' : '🎸 Instrumental Detected'}
-                    </div>
-                `;
-                problemsDiv.innerHTML = analysisHtml;
+            updateStatus('✨ Applying effects to selection...');
+            
+            try {
+                // Get effect parameters
+                const reverbAmount = document.getElementById('reverbAmount').value / 100;
+                const echoAmount = document.getElementById('echoAmount').value / 100;
+                const pitchShift = document.getElementById('pitchShift').value;
+                
+                // Process each effect
+                let processedBuffer = editedAudioBuffer;
+                
+                if (reverbAmount > 0) {
+                    processedBuffer = await processSelection('reverb', { amount: reverbAmount });
+                }
+                
+                if (echoAmount > 0) {
+                    processedBuffer = await processSelection('echo', { amount: echoAmount });
+                }
+                
+                if (pitchShift !== 0) {
+                    processedBuffer = await processSelection('pitch', { semitones: pitchShift });
+                }
+                
+                // Replace selection
+                const resultBuffer = replaceSelection(editedAudioBuffer, processedBuffer, selection.start, selection.end);
+                editedAudioBuffer = resultBuffer;
+                
+                displayWaveform(editedAudioBuffer);
+                addToHistory('Effects applied to ' + selection.start.toFixed(1) + 's - ' + selection.end.toFixed(1) + 's');
+                updateStatus('✅ Effects applied to selection!');
+                
+            } catch (error) {
+                console.error('❌ Effects application error:', error);
+                updateStatus('❌ Error applying effects');
             }
         }
 
-        function updateAIProblems(problems) {
-            const problemsDiv = document.getElementById('aiProblems');
-            if (problems.length > 0) {
-                const problemsHtml = problems.map(problem => 
-                    `<div style="color: #ff6b6b; margin-bottom: 5px;">⚠️ ${problem}</div>`
-                ).join('');
-                problemsDiv.innerHTML += `<div style="margin-top: 15px;"><strong>🔧 AI Detected Issues:</strong></div>${problemsHtml}`;
-            } else {
-                problemsDiv.innerHTML += `<div style="color: #4ecdc4; margin-top: 15px;">✅ No major issues detected!</div>`;
-            }
+        // ===== PROCESSING FUNCTIONS =====
+        async function processSelection(operation, params) {
+            if (!originalAudioBuffer) return null;
+            
+            // Extract selection
+            const selectionBuffer = extractSelection(editedAudioBuffer, selection.start, selection.end);
+            
+            // Process with Web Audio API
+            const processedBuffer = await audioWorklet.processAudio(selectionBuffer, operation, params);
+            
+            return processedBuffer;
         }
 
-        function updateAIBeatMatcher(bpm) {
-            const beatMatcherDiv = document.getElementById('aiBeatMatcher');
-            beatMatcherDiv.innerHTML = `
-                <div style="color: #4ecdc4; font-size: 24px; font-weight: bold;">${bpm} BPM</div>
-                <div style="color: #888; margin-top: 5px;">Detected tempo</div>
-                <div style="margin-top: 10px;">
-                    <button class="quick-upload-btn" onclick="aiBeatSync()">
-                        🥁 Auto Sync to Beat
-                    </button>
-                </div>
+        function extractSelection(audioBuffer, startTime, endTime) {
+            const startSample = Math.floor(startTime * audioBuffer.sampleRate);
+            const endSample = Math.floor(endTime * audioBuffer.sampleRate);
+            const selectionLength = endSample - startSample;
+            
+            const newBuffer = audioContext.createBuffer(
+                audioBuffer.numberOfChannels,
+                selectionLength,
+                audioBuffer.sampleRate
+            );
+            
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                const oldData = audioBuffer.getChannelData(channel);
+                const newData = newBuffer.getChannelData(channel);
+                
+                for (let i = 0; i < selectionLength; i++) {
+                    newData[i] = oldData[startSample + i];
+                }
+            }
+            
+            return newBuffer;
+        }
+
+        function replaceSelection(originalBuffer, processedSelection, startTime, endTime) {
+            const startSample = Math.floor(startTime * originalBuffer.sampleRate);
+            const endSample = Math.floor(endTime * originalBuffer.sampleRate);
+            const selectionLength = endSample - startSample;
+            
+            const newBuffer = cloneAudioBuffer(originalBuffer);
+            
+            for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
+                const originalData = originalBuffer.getChannelData(channel);
+                const newData = newBuffer.getChannelData(channel);
+                const processedData = processedSelection.getChannelData(channel);
+                
+                // Replace selection with processed audio
+                for (let i = 0; i < Math.min(selectionLength, processedData.length); i++) {
+                    newData[startSample + i] = processedData[i];
+                }
+            }
+            
+            return newBuffer;
+        }
+
+        function cloneAudioBuffer(audioBuffer) {
+            const newBuffer = audioContext.createBuffer(
+                audioBuffer.numberOfChannels,
+                audioBuffer.length,
+                audioBuffer.sampleRate
+            );
+            
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                const oldData = audioBuffer.getChannelData(channel);
+                const newData = newBuffer.getChannelData(channel);
+                newData.set(oldData);
+            }
+            
+            return newBuffer;
+        }
+
+        // ===== PLAYBACK FUNCTIONS =====
+        function playSelected() {
+            if (!editedAudioBuffer || selection.start === selection.end) {
+                alert('Please select a region to play!');
+                return;
+            }
+            
+            stopPlayback();
+            
+            const selectionBuffer = extractSelection(editedAudioBuffer, selection.start, selection.end);
+            currentAudioBuffer = selectionBuffer;
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = currentAudioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+            
+            playbackSource = source;
+            isPlaying = true;
+            
+            source.onended = () => {
+                isPlaying = false;
+                updateStatus('⏹️ Playback finished');
+            };
+            
+            updateStatus('▶️ Playing selection...');
+        }
+
+        function playAll() {
+            if (!editedAudioBuffer) {
+                alert('No audio loaded!');
+                return;
+            }
+            
+            stopPlayback();
+            
+            currentAudioBuffer = editedAudioBuffer;
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = currentAudioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+            
+            playbackSource = source;
+            isPlaying = true;
+            
+            source.onended = () => {
+                isPlaying = false;
+                updateStatus('⏹️ Playback finished');
+            };
+            
+            updateStatus('▶️ Playing entire audio...');
+        }
+
+        function stopPlayback() {
+            if (playbackSource) {
+                playbackSource.stop();
+                playbackSource = null;
+                isPlaying = false;
+            }
+            updateStatus('⏹️ Playback stopped');
+        }
+
+        // ===== BEFORE/AFTER COMPARISON =====
+        function playBefore() {
+            if (!originalAudioBuffer) {
+                alert('No original audio loaded!');
+                return;
+            }
+            
+            stopPlayback();
+            currentAudioBuffer = originalAudioBuffer;
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = currentAudioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+            
+            playbackSource = source;
+            
+            // Update UI
+            document.getElementById('beforeBtn').classList.add('active');
+            document.getElementById('afterBtn').classList.remove('active');
+            
+            updateComparisonInfo('Playing: Original (Before edits)');
+        }
+
+        function playAfter() {
+            if (!editedAudioBuffer) {
+                alert('No edited version available!');
+                return;
+            }
+            
+            stopPlayback();
+            currentAudioBuffer = editedAudioBuffer;
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = currentAudioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+            
+            playbackSource = source;
+            
+            // Update UI
+            document.getElementById('afterBtn').classList.add('active');
+            document.getElementById('beforeBtn').classList.remove('active');
+            
+            updateComparisonInfo('Playing: Edited (After edits)');
+        }
+
+        function updateComparisonInfo(text) {
+            document.getElementById('comparisonInfo').textContent = text;
+        }
+
+        // ===== EDIT HISTORY =====
+        function addToHistory(action) {
+            const timestamp = new Date().toLocaleTimeString();
+            editHistory.push({ action, timestamp });
+            
+            const historyDiv = document.getElementById('editHistory');
+            const entry = document.createElement('div');
+            entry.style.cssText = 'background: rgba(78, 205, 196, 0.1); padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 12px;';
+            entry.innerHTML = `
+                <div style="color: #4ecdc4; font-weight: bold;">${action}</div>
+                <div style="color: #888; font-size: 10px;">${timestamp}</div>
             `;
+            
+            historyDiv.insertBefore(entry, historyDiv.firstChild);
+            
+            // Keep only last 10 entries
+            while (historyDiv.children.length > 10) {
+                historyDiv.removeChild(historyDiv.lastChild);
+            }
         }
 
-        // UTILITY FUNCTIONS
-        function showAIProgress(message) {
-            showAIStatus(message);
-            document.getElementById('recordingIndicator').textContent = message;
-            document.getElementById('recordingIndicator').classList.add('active');
+        function undoLastEdit() {
+            if (editHistory.length === 0) {
+                alert('No edits to undo!');
+                return;
+            }
+            
+            // For now, just restore to original
+            editedAudioBuffer = cloneAudioBuffer(originalAudioBuffer);
+            displayWaveform(editedAudioBuffer);
+            
+            const lastEdit = editHistory.pop();
+            updateStatus(`↶ Undone: ${lastEdit.action}`);
+            
+            // Clear history display
+            const historyDiv = document.getElementById('editHistory');
+            if (historyDiv.firstChild) {
+                historyDiv.removeChild(historyDiv.firstChild);
+            }
         }
 
-        function showAIStatus(message) {
-            document.getElementById('recordingIndicator').textContent = message;
-            setTimeout(() => {
-                document.getElementById('recordingIndicator').classList.remove('active');
-            }, 3000);
+        function clearHistory() {
+            editHistory = [];
+            document.getElementById('editHistory').innerHTML = '<div style="color: #888; font-size: 12px; text-align: center;">No edits yet...</div>';
+            updateStatus('🗑️ Edit history cleared');
         }
 
-        function addAIChatMessage(sender, message) {
-            const messagesContainer = document.getElementById('aiChatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `ai-chat-message ai-chat-${sender}`;
-            messageDiv.textContent = message;
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // ===== AI SUGGESTIONS =====
+        function updateAISuggestions() {
+            if (!originalAudioBuffer) return;
+            
+            const duration = originalAudioBuffer.duration;
+            const suggestions = [];
+            
+            // Simple analysis-based suggestions
+            if (duration > 30) {
+                suggestions.push('Consider adding fade-in/out for smooth transitions');
+            }
+            
+            if (duration > 60) {
+                suggestions.push('Long audio - try isolating vocals for cleaner sound');
+            }
+            
+            suggestions.push('Try reverb on vocals for professional sound');
+            suggestions.push('Use echo sparingly on specific phrases');
+            suggestions.push('Pitch shift can create interesting harmonies');
+            
+            const suggestionsDiv = document.getElementById('aiSuggestions');
+            suggestionsDiv.innerHTML = suggestions.map(suggestion => 
+                `<div style="background: rgba(78, 205, 196, 0.1); padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 12px; border-left: 3px solid #4ecdc4;">💡 ${suggestion}</div>`
+            ).join('');
         }
 
-        function toggleAIChat() {
-            const chatInterface = document.getElementById('aiChatInterface');
-            chatInterface.style.display = chatInterface.style.display === 'flex' ? 'none' : 'flex';
+        // ===== UTILITY FUNCTIONS =====
+        function updateStatus(message) {
+            document.getElementById('statusBar').textContent = message;
+            console.log('Status:', message);
         }
 
-        function sendAIChatMessage() {
-            const input = document.getElementById('aiChatInput');
-            const message = input.value.trim();
-            if (message) {
-                addAIChatMessage('user', message);
-                input.value = '';
+        // ===== EFFECT SLIDERS =====
+        function setupEffectSliders() {
+            const sliders = [
+                { id: 'reverbAmount', valueId: 'reverbValue', suffix: '%' },
+                { id: 'echoAmount', valueId: 'echoValue', suffix: '%' },
+                { id: 'pitchShift', valueId: 'pitchValue', suffix: ' semitones' },
+                { id: 'vocalVolume', valueId: 'vocalVolumeValue', suffix: '%' },
+                { id: 'beatVolume', valueId: 'beatVolumeValue', suffix: '%' }
+            ];
+            
+            sliders.forEach(slider => {
+                const element = document.getElementById(slider.id);
+                const valueElement = document.getElementById(slider.valueId);
                 
-                // Simulate AI response
-                setTimeout(() => {
-                    const responses = [
-                        "I'll analyze your audio and suggest the best enhancement settings.",
-                        "Based on your audio, I recommend using AI noise reduction at 75%.",
-                        "I can help you master this track with professional AI algorithms.",
-                        "Let me apply intelligent EQ and compression to enhance your audio.",
-                        "Your vocals will sound much clearer with AI de-reverb and clarity enhancement."
-                    ];
-                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                    addAIChatMessage('assistant', randomResponse);
-                }, 1000);
-            }
-        }
-
-        // TRACK CONTROL FUNCTIONS
-        function playTrack(trackId) {
-            const track = allTracks.find(t => t.id === trackId);
-            if (track && track.audioElement) {
-                track.audioElement.play();
-                console.log('▶️ Playing track:', track.name);
-            }
-        }
-
-        function stopTrack(trackId) {
-            const track = allTracks.find(t => t.id === trackId);
-            if (track && track.audioElement) {
-                track.audioElement.pause();
-                track.audioElement.currentTime = 0;
-                track.playbackPosition = 0;
-                updateTrackWaveform(track);
-                console.log('⏹️ Stopped track:', track.name);
-            }
-        }
-
-        function toggleMute(btn) {
-            const trackDiv = btn.closest('.track');
-            const track = allTracks.find(t => t.id === trackDiv.id);
-            if (track) {
-                track.muted = !track.muted;
-                btn.textContent = track.muted ? '🔊 Unmute' : '🔇 Mute';
-                btn.style.background = track.muted ? '#666' : '';
-                if (track.audioElement) {
-                    track.audioElement.muted = track.muted;
-                }
-            }
-        }
-
-        function toggleSolo(btn) {
-            const trackDiv = btn.closest('.track');
-            const track = allTracks.find(t => t.id === trackDiv.id);
-            if (track) {
-                track.solo = !track.solo;
-                btn.textContent = track.solo ? '🔇 Unsolo' : '🎵 Solo';
-                btn.style.background = track.solo ? '#4ecdc4' : '';
-                
-                // Handle solo logic for all tracks
-                allTracks.forEach(t => {
-                    if (t.audioElement) {
-                        if (track.solo) {
-                            t.audioElement.muted = !t.solo;
-                        } else {
-                            t.audioElement.muted = t.muted;
-                        }
-                    }
-                });
-            }
-        }
-
-        function deleteTrack(trackId) {
-            const trackIndex = allTracks.findIndex(t => t.id === trackId);
-            if (trackIndex !== -1) {
-                const track = allTracks[trackIndex];
-                if (track.audioElement) {
-                    track.audioElement.pause();
-                    track.audioElement.src = '';
-                }
-                allTracks.splice(trackIndex, 1);
-                document.getElementById(trackId).remove();
-                console.log('🗑️ Deleted track:', track.name);
-            }
-        }
-
-        function aiEnhanceTrack(trackId) {
-            const track = allTracks.find(t => t.id === trackId);
-            if (track) {
-                showAIProgress(`AI: Enhancing ${track.name}...`);
-                setTimeout(() => {
-                    showAIStatus(`✅ AI: Enhanced ${track.name} with intelligent processing`);
-                    addAIChatMessage('assistant', `I've applied AI enhancement to "${track.name}" with noise reduction, clarity boost, and intelligent compression. The track now sounds much more professional!`);
-                }, 2000);
-            }
-        }
-
-        // SLIDER CONTROLS
-        function setupSliderControls() {
-            const sliders = ['noiseReduction', 'vocalClarity', 'beatSync', 'compression'];
-            sliders.forEach(sliderId => {
-                const slider = document.getElementById(sliderId);
-                const valueDisplay = document.getElementById(sliderId + 'Value');
-                
-                slider.addEventListener('input', function() {
+                element.addEventListener('input', function() {
                     const value = this.value;
-                    valueDisplay.textContent = value + '%';
-                    aiEnhancements[sliderId] = parseInt(value);
+                    valueElement.textContent = value + slider.suffix;
                     
-                    // Apply changes in real-time
-                    console.log(`🎛️ ${sliderId}: ${value}%`);
+                    // Store effect value
+                    const effectName = slider.id.replace('Amount', '').replace('Shift', '');
+                    effects[effectName] = parseFloat(value);
                 });
             });
         }
 
-        // INITIALIZATION
-        window.addEventListener('load', function() {
-            console.log('🤖 AI Audio Enhancement Studio Loading...');
-            initAudioContext();
-            setupUploadHandlers();
-            setupSliderControls();
-            addTrack('audio');
-            console.log('✅ AI Studio Ready with Enhanced Upload System!');
+        // ===== EXPORT FUNCTION =====
+        function exportEditedAudio() {
+            if (!editedAudioBuffer) {
+                alert('No edited audio to export!');
+                return;
+            }
             
-            setTimeout(() => {
-                addAIChatMessage('assistant', '👋 Welcome! Upload your audio files above and I\'ll automatically analyze them and suggest enhancements. Drag & drop or click the upload area to get started!');
-            }, 2000);
-        });
+            updateStatus('💾 Preparing export...');
+            
+            // Convert to WAV
+            const wavBlob = audioBufferToWav(editedAudioBuffer);
+            const url = URL.createObjectURL(wavBlob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'edited_audio.wav';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            updateStatus('✅ Export complete!');
+        }
 
-        // DEBUG INFO
-        console.log('🤖 AI Audio Enhancement Studio v4.0 - Complete with Scroll Support');
-        console.log('✅ Features: Prominent Upload, Drag & Drop, Sample Files, AI Analysis, Full Scroll');
-        console.log('📁 Upload: Multiple file support, real-time processing, visual feedback');
-        console.log('🎯 AI: Automatic analysis, problem detection, enhancement suggestions');
-        console.log('📜 Scroll: Full viewport scrolling enabled for all features');
+        // ===== INITIALIZATION =====
+        window.addEventListener('load', async function() {
+            console.log('🎵 AI Audio Editor Pro - Advanced Selective Editing');
+            await initAudioSystem();
+            setupEffectSliders();
+            updateStatus('🎵 Advanced audio editor ready! Load a file to start editing...');
+        });
     </script>
 </body>
 </html>
