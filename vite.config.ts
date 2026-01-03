@@ -4,7 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/soundforge-ai/',
+  base: './', // ✅ FIXED: Use relative paths for GitHub Pages
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
